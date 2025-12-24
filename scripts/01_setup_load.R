@@ -1,7 +1,7 @@
 # =============================================================================
 # Medical Application Project - Setup & Load
 # 01_setup_load.R
-# ============================================================================
+# ==============================================================================
 
 if (!requireNamespace("tidyverse", quietly = TRUE)) install.packages("tidyverse")
 library(tidyverse)
