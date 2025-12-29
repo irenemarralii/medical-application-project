@@ -679,7 +679,7 @@ ggsave("outputs/task1/figures/trend_hit6_sens.png", p_hit6_sens, width = 7, heig
 readr::write_csv(trend_sens, "outputs/task1/trend_summary_sens.csv")
 ```
 The resulting figures show that the overall temporal patterns for MMDs and HIT-6 are broadly consistent with the main analysis. 
-Minor differences in the magnitude of meanst at specific visits are expected under LOCF, but the qualitative trajectories across months/cycles appear comparable.
+Minor differences in the magnitude of means at specific visits are expected under LOCF, but the qualitative trajectories across months/cycles appear comparable.
 ===============================================================================
 As an exploratory complement to the mean trends, we visualise individual MMDs trajectories for a random subset of patients in the SENS dataset.
 This helps verify that LOCF does not mask the strong between-patient heterogeneity already observed in the main analysis.
@@ -704,7 +704,7 @@ p_spaghetti_sens
 ggsave("outputs/task1/figures/spaghetti_mmds_sens.png", p_spaghetti_sens, width = 7, height = 4)
 ```
 The spaghetti plot confirms substantial inter-individual variability in MMDs trajectories, even under LOCF.
-Therefore, any conclusions based only on average trends should be interpretd together with the heterogeneity visible at the patient level.
+Therefore, any conclusions based only on average trends should be interpreted together with the heterogeneity visible at the patient level.
 ===============================================================================
 We then replicate the Cycle 1 responder classification on the SENS dataset using the same clinically motivated thresholds adopted in the main analysis.
 
@@ -788,7 +788,7 @@ readr::write_csv(tab_2x2_sens, "outputs/task1/responder_2x2_sens.csv")
 ```
 
 We now reproduce the key mismatch visualisation on the SENS dataset.
-Each point represents one patient, with the x-axis showing the percentage change in MMDs from Month1 to the end of Cycle 1 and the y-axis showing the corresponding change in HIT-6.
+Each point represents one patient, with the x-axis showing the percentage change in MMDs from Month 1 to the end of Cycle 1 and the y-axis showing the corresponding change in HIT-6.
 The dashed lines indicate the same clinical thresholds used in the main analysis (≥50% MMDs reduction, ≥ 5 point HIT-6 improvement), defining the four response quadrants. 
 ```{r task1-mismatch-scatter-sens, message=FALSE, warning=FALSE}
 # ------------------------------------------------------------------
@@ -805,6 +805,14 @@ c1_change_sens <- c1_change_sens %>%
     )
   )
 
+c1_change_sens <- c1_change_sens %>%
+  mutate(discordant_primary = if_else(obj_resp == 1L & subj_resp == 0L, 1L, 0L))
+
+geom_point(aes(shape = factor(discordant_primary)), alpha = 0.85)
+
+labs(shape = "Discordance (1 = obj yes, subj no)")
+
+
 p_scatter_sens <- ggplot(c1_change_sens, aes(x = pct_change_MMDs, y = delta_HIT6)) +
   geom_vline(xintercept = -0.50, linetype = "dashed") +
   geom_hline(yintercept = -5, linetype = "dashed") +
@@ -819,7 +827,7 @@ p_scatter_sens <- ggplot(c1_change_sens, aes(x = pct_change_MMDs, y = delta_HIT6
 p_scatter_sens
 ggsave("outputs/task1/figures/scatter_mmds_pct_vs_hit6_delta_sens.png", p_scatter_sens, width = 7, height = 5)
 ```
-The scatter plot provides a direct confirmation that an objective - subjective mismatch persists under LOCF.
+The scatter plot provides a direct confirmation that an objective-subjective mismatch persists under LOCF.
 In particular, patients in the "objective responder / subjective non-responder" quadrant represent the primary discordant profile of interest, supporting that the mismatch is not an artefact of the interpolation strategy.
 
 To complement the scatter plot, we summarise the number and percentage of patients falling into each response quadrant under the SENS strategy.
@@ -886,9 +894,7 @@ compare_fx <- dplyr::bind_rows(
 compare_fx
 readr::write_csv(compare_fx, "outputs/task1/compare_main_vs_sens_fixed_effects_sign.csv")
 ```
-
-
-Results obtained using LOCF imputation are consistent with the main analysis based on linear interpolation.
+Results under  LOCF are qualitatively consistent with the main (interpolation-based) analysis, with similar direction of month/cycle effects and comparable discordance prevalence.
 
 Both objective (MMDs) and subjective (HIT-6) outcomes show comparable average longitudinal trends, and the proportion of objective and subjective responders remains similar across datasets.
 Importantly, the prevalence of discordant patients is preserved, indicating that the objective–subjective mismatch observed in Cycle 1 is not driven by the specific missing-data handling strategy.
