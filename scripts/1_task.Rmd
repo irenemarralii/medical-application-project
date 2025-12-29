@@ -13,7 +13,7 @@ We proceed in two steps:
 We fit separate linear mixed-effects models for MMDs (objective) and HIT-6 (subjective), accounting for repeated measures with a patient-specific random intercept.
 
 **2. Mismatch at Cycle 1:**
-We define objective and subjective responders using pre-specified clinical threshold and estimate the proportion of discordant patietns (objective responder , but not subjective responder).
+We define objective and subjective responders using pre-specified clinical threshold and estimate the proportion of discordant patients (objective responder , but not subjective responder).
 
 A sensitivity analysis repeats the same workflow under an alternative longitudinal imputation strategy (LOCF) to assess robustness.
 
@@ -239,7 +239,7 @@ ggsave("outputs/task1_trend_hit6_main.png", p_hit6_main, width = 7, height = 4)
 # Save trend table too 
 readr::write_csv(trend_main, "outputs/task1_trend_summary_main.csv")
 ```
-The resulting figures show the average trajectoreis of objective (MMDs) and subjective (HIT-6) outcomes voer follow-up. We saved both the plots and the aggregated summary table to be reused in the final report.
+The resulting figures show the average trajectoreis of objective (MMDs) and subjective (HIT-6) outcomes over follow-up. We saved both the plots and the aggregated summary table to be reused in the final report.
 
 ```{r task1-spaghetti-mmds-main, message=FALSE, warning=FALSE}
 set.seed(123)
@@ -261,6 +261,7 @@ ggplot(spaghetti_data,
   )
 ```
 As an exploratory visualization, we report individual longitudinal trajectories (spaghetti plot) for a subset of patients, highighting the  substantial inter-individual heterogeneity underlying the average trends.
+
 ===============================================================================
 Now we move from average longitudinal trends to a patient-level definition of response in Cycle 1.
 We construct a start/end dataset by selecting Cycle 1 only and extracting, for each subject, baseline values at Month 1 and end-of-cycle values at Month 12 (or, if Month 12 is missing, the last observed month within Cycle 1, consistent with the "last available visit" rule).
@@ -348,7 +349,9 @@ cat("Patients with valid start/end in Cycle 1:", nrow(c1_change), "\n")
 ```
 The resulting dataset (c1_change) contains one row per subject with Cycle 1 start and end measurements and the corresponding change metrics.
 Only subjects with both start-of-cycle and end-of-cycle information are retained (inner_join), ensuring that responder classification is based on complete paired measurements.
+
 ===============================================================================
+
 In this next step, we will apply pre-specified clinical thresholds to pct_change_MMDs and delta_HIT6 to define objective and subjective responders and identify discordant profiles. 
 
 Now we classify Cycle 1 responses using clinically motivated thresholds. 
@@ -356,6 +359,7 @@ An objective responder is defined as a ≥ 50% reduction in MMDs from Month 1 to
 A subjective responder is defined as a ≥ 5-point reduction in HIT-6 (delta_HIT6 ≤ -5), corresponding to the Minimal Important Clinical Difference (MICD) reported in the literature.
 
 We then define discordance as objective response without subjective improvement (obj-resp = 1 & subj_resp = 0) and label concordant responders (obj_resp = 1 & subj_resp = 1)
+
 ```{r task1-responders-discordance, message=FALSE, warning=FALSE} 
 # ------------------------------------------------------------------
 # Define responders and discordance (CYCLE 1)
@@ -413,42 +417,61 @@ head(c1_change)
 Using these clinically grounded definitions, we classified each patient at the end of Cycle 1 as an objective responder, a subjective responder, both, or neither.
 
 This classification allows us to explicitly distinguish between:
--**concordant responder**, who show both a clinically meaningful reduction in Monthly Migraine Days and a relevant improvement in patient-reported impact (HI-6);
+-**concordant responder**, who show both a clinically meaningful reduction in Monthly Migraine Days and a relevant improvement in patient-reported impact (HIT-6);
 -**discordant responders**, who achieve a substantial objective improvement (≥50% reduction in MMDs) without a corresponding subjective benefit.
 
 The resulting dataset('c1_change) contains one rwo per subject with Cycle 1 start/end measurements, response indicators and a binary discordance label.
-This dataset represents the core input for downstream analyses aimed at  characterizing discordant patients and identifying baseline or longitudinal factors associated wiht objective-subjective mismtach (Task 2).
-```{r}
+This dataset represents the core input for downstream analyses aimed at  characterizing discordant patients and identifying baseline or longitudinal factors associated wiht objective-subjective mismatch (Task 2).
+
+===============================================================================
+**Quantifying objective-subjective mismatch**
+We first summarise the agreement between objective and subjective responder definitions using a 2x2 contingency table.
+
+This table cross-classifies patients according to objective response (based on MMDs) and subjective response (based on HIT-6), allowing a direct quantification of concordant and discordant profiles.
+
+```{r task1-mismatch-2x2, message=FALSE, warning=FALSE}
 # ------------------------------------------------------------------
-# 5.1 2x2 responder table (Objective vs Subjective)
+#  2x2 responder table (Objective vs Subjective)
 # ------------------------------------------------------------------
 
+dir.create("outputs/task1", recursive = TRUE, showWarnings = FALSE)
 tab_2x2 <- c1_change %>%
   count(obj_resp, subj_resp, name = "n") %>%
-  mutate(pct_total = n / sum(n))
+  mutate(pct_total = 100 * n / sum(n))
 
 # Print table
 tab_2x2
 
 # Save table for reporting
-readr::write_csv(tab_2x2, "outputs/task1_responder_2x2.csv")
+readr::write_csv(tab_2x2, "outputs/task1/responder_2x2_main.csv")
 
 
-# Optional: a more readable labeled table
+#Labeled table
 tab_2x2_labeled <- c1_change %>%
   mutate(
     obj_resp_lbl = if_else(obj_resp == 1L, "Objective responder", "Objective non-responder"),
     subj_resp_lbl = if_else(subj_resp == 1L, "Subjective responder", "Subjective non-responder")
   ) %>%
   count(obj_resp_lbl, subj_resp_lbl, name = "n") %>%
-  mutate(pct_total = n / sum(n))
+  mutate(pct_total = 100* n / sum(n))
 
 tab_2x2_labeled
-readr::write_csv(tab_2x2_labeled, "outputs/task1_responder_2x2_labeled.csv")
+readr::write_csv(tab_2x2_labeled,"outputs/task1/responder_2x2_labeled_main.csv")
+```
 
+The 2x2 table provides a direct quantification of agreement between objective and subjective response definitions.
 
+In particular, the cell(obj=1, subj=0) represents patients with a clinically meaningful reduction in MMDs, but do not report a relevant improvement in HIT-6.
+This subgroup constitutes the **discordant patienst of primary interest** fro the remainder of the analysis.
+
+===============================================================================
+We now visualize the patient-level mismatch between objective and subjective improvement at the end of Cycle 1.
+
+Each point represents one patient, with the x-axis showing the percentage change in Monthly Migraine Days (MMDs) from Month 1 to Month 12 and the y-axis showing the change in HIT-6 over the same interval.
+
+```{r task1-mismatch-scatter, message=FALSE, warning=FALSE}
 # ------------------------------------------------------------------
-# 5.2 Scatter plot: objective vs subjective change (Δ vs Δ)
+# Scatter plot: objective vs subjective change (Δ vs Δ)
 # ------------------------------------------------------------------
 # X axis: % change in MMDs (end vs start)
 # Y axis: change in HIT-6 (end - start)
@@ -464,7 +487,9 @@ c1_change <- c1_change %>%
       obj_resp == 1L & subj_resp == 0L ~ "Discordant (obj yes, subj no)",
       obj_resp == 0L & subj_resp == 1L ~ "Discordant (obj no, subj yes)",
       TRUE ~ "Concordant non-responders"
-    )
+    ), 
+    #Highlight primary discordance of interest (obj yes, subj no)
+    discordant_primary = if_else(obj_resp == 1L & subj_resp == 0L, 1L, 0L)
   )
 
 # Scatter plot
@@ -484,19 +509,369 @@ p_scatter <- ggplot(c1_change, aes(x = pct_change_MMDs, y = delta_HIT6)) +
 p_scatter
 
 # Save the figure
-ggsave("outputs/task1_scatter_delta_vs_delta.png", p_scatter, width = 7, height = 5)
+ggsave("outputs/task1/figures/scatter_mmds_pct_vs_hit6_delta_main.png", p_scatter, width = 7, height = 5)
+```
+The scatter plot provides the core representation of objective-subjective agreement. 
 
+Patients with x ≤ 0.50 but y> -5 fall into the primary discordant region (objective responder without a clinically meaningdul HIT-6 improvement).
+Conversely, patients with x > -0.50 but y ≤-5 show the opposite discordance pattern (subjective improvement without meeting the objective responder definition). This visual summary complements the 2x2 table, by showing the magnitude and variability of changes within each quadrant. 
 
+===============================================================================
+To complement the scatter plot, we summarise the distribution of patients across the four response quadrats (concordant responders, concordant non-responders, and the two discordant profiles).
+This provides an immediate quantitative breakdown of mismatch patterns at the end of Cycle 1.
+```{r task1-mismatch-quadrant-summary, message=FALSE, warning=FALSE}
 # ------------------------------------------------------------------
-# 5.3 Example counts per quadrant (quick summary)
+# Example counts per quadrant (quick summary)
 # ------------------------------------------------------------------
 
 quad_summary <- c1_change %>%
   count(quadrant, name = "n") %>%
-  mutate(pct = n / sum(n)) %>%
+  mutate(pct = 100* n / sum(n)) %>%
   arrange(desc(n))
 
 quad_summary
-readr::write_csv(quad_summary, "outputs/task1_quadrant_summary.csv")
+readr::write_csv(quad_summary, "outputs/task1/quadrant_summary_main.csv")
+```
+The quadrant summary quantifies how patients are distributed across concordant and discordant profiles, complementing the visual scatter plot with exact counts and percentages.
+
+In particular, the *discordant (obj yes, subj no)* group directly captures the primary mismatch of interest: patients achieving a substantial reduction in migraine frequency without reporting a clinically meaningful improvement in HIT-6.
+Conversely, the *discordant (obj no, subj yes)* group highlights the opposite pattern, i.e., subjective improvement without meeting the objective responder criterion.
+
+**Interpretation of Task 1 (Objective-SUbjective Mismatch)*
+
+On average, both objective and subjective outcomes show a clear improvement over time under anti-CGRP treatment.
+Linear mixed-effects models indicate a significant reduction in Monthly Migraine Days (MMDs) and a parallel decrease in HIT-6 scores across follow-up, suggesting an overall beneficial treatment effect at the population level.
+
+However, patient-level analyses reveal substantial heterogeneity in treatment response.
+Approximately **X% of patients** meet the objective responder criterion (≥50% reduction in MMDs) without achieving a clinically meaningful improvement in HIT-6 (≥5-point reduction), defining a non-negligible group of *discordant responders*.
+
+The scatter plot and quadrant analysis highlight that many patients cluster in the region of marked migraine frequency reduction but limited perceived improvement, indicating that objective efficacy does not uniformly translate into better patient-reported outcomes.
+
+These findings motivate the next step of the analysis, which aims to characterize discordant patients and investigate whether baseline or longitudinal factors—such as anxiety/depression (HADS), sleep-related variables, or comorbidities—are associated with objective–subjective mismatch (Task 2).
+===============================================================================
+===============================================================================
+**Sensitivity analysis (LOCF vs interpolation)**
+To assess the robustness of the objective–subjective mismatch results, we repeat the core analyses of Task 1 using an alternative longitudinal dataset based on Last Observation Carried Forward (LOCF) imputation.
+
+The goal of this sensitivity analysis is not to introduce new models or definitions, but to verify whether the estimated longitudinal trends and the responder/discordance classification are consistent across different missing-data handling strategies.
+
+We first refit the same linear mixed-effects models for MMDs and HIT-6 using the SENS dataset.
+Model structure, fixed effects and random effects specification are kept identical to the main analysis, ensuring direct comparability of results.
+
+```{r task1-mixed-models-sens, message=FALSE, warning=FALSE}
+# ------------------------------------------------------------------
+# Mixed models on SENS dataset (LOCF)
+# ------------------------------------------------------------------
+
+library(lme4)
+library(lmerTest)
+
+# SENS dataset (LOCF-based)
+dat_sens <- data_task1_sens
+
+# Objective outcome: Monthly Migraine Days
+mod_mmds_sens <- lmer(
+  MMDs ~ CYCLE + MONTH + (1 | SUBJECT_ID),
+  data = dat_sens,
+  REML = FALSE
+)
+
+# Subjective outcome: HIT-6
+mod_hit6_sens <- lmer(
+  HIT6 ~ CYCLE + MONTH + (1 | SUBJECT_ID),
+  data = dat_sens,
+  REML = FALSE
+)
+
+summary(mod_mmds_sens)
+summary(mod_hit6_sens)
+
+# Optional HADS models (only if available)
+mods_optional_sens <- list()
+
+if ("HADSA" %in% names(dat_sens)) {
+  mods_optional_sens$hadsa_sens <- lmer(HADSA ~ CYCLE + MONTH + (1 | SUBJECT_ID),
+                                       data = dat_sens, REML = FALSE)
+}
+
+if ("HADSD" %in% names(dat_sens)) {
+  mods_optional_sens$hadsd_sens <- lmer(HADSD ~ CYCLE + MONTH + (1 | SUBJECT_ID),
+                                       data = dat_sens, REML = FALSE)
+}
+
+if (length(mods_optional_sens) > 0) lapply(mods_optional_sens, summary)
 ```
 
+
+We export fixed-effects tables (β, SE, 95% CI) for the SENS mixed models using the same tidying procedure adopted in the main analysis.
+This enables an immediate comparison of the direction and relative magnitude of cycle/month effects across missing-data strategies.
+
+```{r}
+# ------------------------------------------------------------------
+# Export fixed effects tables (SENS)
+# ------------------------------------------------------------------
+
+if (!requireNamespace("broom.mixed", quietly = TRUE)) install.packages("broom.mixed")
+library(broom.mixed)
+
+dir.create("outputs/task1", recursive = TRUE, showWarnings = FALSE)
+
+fx_mmds_sens <- tidy(mod_mmds_sens, effects = "fixed", conf.int = TRUE)
+fx_hit6_sens <- tidy(mod_hit6_sens, effects = "fixed", conf.int = TRUE)
+
+readr::write_csv(fx_mmds_sens, "outputs/task1/fixed_effects_mmds_sens.csv")
+readr::write_csv(fx_hit6_sens, "outputs/task1/fixed_effects_hit6_sens.csv")
+
+# Optional models (if fitted)
+if (exists("mods_optional_sens") && length(mods_optional_sens) > 0) {
+  fx_optional_sens <- purrr::imap_dfr(
+    mods_optional_sens,
+    ~ tidy(.x, effects = "fixed", conf.int = TRUE) %>% dplyr::mutate(model = .y)
+  )
+  readr::write_csv(fx_optional_sens, "outputs/task1/fixed_effects_optional_sens.csv")
+}
+
+fx_mmds_sens
+fx_hit6_sens
+```
+===============================================================================
+We replicate the “core” trend plots on the SENS dataset, summarising mean ± standard error at each scheduled follow-up month within cycle.
+These figures provide a transparent visual check that average trajectories are not materially altered by the LOCF strategy.
+
+```{r task1-core-plots-sens, message=FALSE, warning=FALSE}
+# ------------------------------------------------------------------
+# Core plots (SENS): mean ± SE trends by (CYCLE, MONTH)
+# ------------------------------------------------------------------
+
+dir.create("outputs/task1/figures", recursive = TRUE, showWarnings = FALSE)
+
+trend_sens <- data_task1_sens %>%
+  group_by(CYCLE, MONTH) %>%
+  summarise(
+    n_MMDs = sum(!is.na(MMDs)),
+    mean_MMDs = mean(MMDs, na.rm = TRUE),
+    se_MMDs = sd(MMDs, na.rm = TRUE) / sqrt(n_MMDs),
+
+    n_HIT6 = sum(!is.na(HIT6)),
+    mean_HIT6 = mean(HIT6, na.rm = TRUE),
+    se_HIT6 = sd(HIT6, na.rm = TRUE) / sqrt(n_HIT6),
+    .groups = "drop"
+  )
+
+p_mmds_sens <- ggplot(trend_sens, aes(x = MONTH, y = mean_MMDs, group = CYCLE, color = CYCLE)) +
+  geom_line() +
+  geom_point() +
+  geom_errorbar(aes(ymin = mean_MMDs - se_MMDs, ymax = mean_MMDs + se_MMDs), width = 0.1) +
+  labs(title = "MMDs over time (SENS, LOCF)", x = "Month", y = "Mean MMDs")
+
+p_hit6_sens <- ggplot(trend_sens, aes(x = MONTH, y = mean_HIT6, group = CYCLE, color = CYCLE)) +
+  geom_line() +
+  geom_point() +
+  geom_errorbar(aes(ymin = mean_HIT6 - se_HIT6, ymax = mean_HIT6 + se_HIT6), width = 0.1) +
+  labs(title = "HIT-6 over time (SENS, LOCF)", x = "Month", y = "Mean HIT-6")
+
+p_mmds_sens
+p_hit6_sens
+
+ggsave("outputs/task1/figures/trend_mmds_sens.png", p_mmds_sens, width = 7, height = 4)
+ggsave("outputs/task1/figures/trend_hit6_sens.png", p_hit6_sens, width = 7, height = 4)
+
+readr::write_csv(trend_sens, "outputs/task1/trend_summary_sens.csv")
+```
+===============================================================================
+```{r warning = FALSE, message = FALSE}
+# ------------------------------------------------------------------
+# Spaghetti plot (SENS): individual MMDs trajectories
+# 
+
+set.seed(123)
+sample_ids_sens <- sample(unique(data_task1_sens$SUBJECT_ID), 30)
+
+spaghetti_sens <- data_task1_sens %>%
+  filter(SUBJECT_ID %in% sample_ids_sens)
+
+p_spaghetti_sens <- ggplot(spaghetti_sens, aes(x = MONTH, y = MMDs, group = SUBJECT_ID)) +
+  geom_line(alpha = 0.3) +
+  geom_point(alpha = 0.3) +
+  labs(title = "Individual MMDs trajectories (subset, SENS)", x = "Month within cycle", y = "MMDs")
+
+p_spaghetti_sens
+ggsave("outputs/task1/figures/spaghetti_mmds_sens.png", p_spaghetti_sens, width = 7, height = 4)
+```
+===============================================================================
+We then replicate the Cycle 1 responder classification on the SENS dataset using the same clinically motivated thresholds adopted in the main analysis.
+
+Objective and subjective responders are defined using identical cut-offs, and discordance is again defined as objective response without subjective improvement.
+
+```{r}
+# ------------------------------------------------------------------
+# Cycle 1 responder and discordance definition (SENS)
+# ------------------------------------------------------------------
+
+# Select Cycle 1
+c1_sens <- data_task1_sens %>%
+  filter(CYCLE == "1") %>%
+  mutate(month_num = as.numeric(as.character(MONTH))) %>%
+  arrange(SUBJECT_ID, month_num)
+
+# Start of cycle (Month 1)
+c1_start_sens <- c1_sens %>%
+  filter(month_num == 1) %>%
+  select(
+    SUBJECT_ID,
+    MMDs_start = MMDs,
+    HIT6_start = HIT6
+  )
+
+# End of cycle (Month 12 or last observed)
+c1_end_sens <- c1_sens %>%
+  group_by(SUBJECT_ID) %>%
+  filter(month_num == max(month_num, na.rm = TRUE)) %>%
+  slice_tail(n = 1) %>%
+  ungroup() %>%
+  select(
+    SUBJECT_ID,
+    MMDs_end = MMDs,
+    HIT6_end = HIT6
+  )
+
+# Merge and compute changes
+c1_change_sens <- c1_start_sens %>%
+  inner_join(c1_end_sens, by = "SUBJECT_ID") %>%
+  mutate(
+    pct_change_MMDs = (MMDs_end - MMDs_start) / MMDs_start,
+    delta_HIT6 = HIT6_end - HIT6_start
+  )
+
+# Define responders
+c1_change_sens <- c1_change_sens %>%
+  mutate(
+    obj_resp = if_else(!is.na(pct_change_MMDs) & pct_change_MMDs <= -0.50, 1L, 0L),
+    subj_resp = if_else(!is.na(delta_HIT6) & delta_HIT6 <= -5, 1L, 0L),
+    discordance = if_else(obj_resp == 1L & subj_resp == 0L, 1L, 0L)
+  )
+
+cat("Objective responder rate (SENS):", mean(c1_change_sens$obj_resp), "\n")
+cat("Subjective responder rate (SENS):", mean(c1_change_sens$subj_resp), "\n")
+cat("Discordance rate (SENS):", mean(c1_change_sens$discordance), "\n")
+
+# Save dataset
+readr::write_csv(
+  c1_change_sens,
+  "outputs/task1/cycle1_responder_discordance_sens.csv"
+)
+```
+===============================================================================
+We reproduce the mismatch outputs on the SENS dataset:
+1) a 2×2 table of objective vs subjective response with percentages;  
+2) a scatter plot of objective vs subjective change with clinical thresholds defining quadrants;  
+3) a quadrant summary reporting counts and percentages per profile.
+```{r}
+# ------------------------------------------------------------------
+# 2x2 responder table (SENS)
+# ------------------------------------------------------------------
+
+tab_2x2_sens <- c1_change_sens %>%
+  count(obj_resp, subj_resp, name = "n") %>%
+  mutate(pct_total = 100 * n / sum(n))
+
+tab_2x2_sens
+readr::write_csv(tab_2x2_sens, "outputs/task1/responder_2x2_sens.csv")
+```
+
+```{r task1-mismatch-scatter-sens, message=FALSE, warning=FALSE}
+# ------------------------------------------------------------------
+# Scatter plot: pct_change_MMDs vs delta_HIT6 (SENS)
+# ------------------------------------------------------------------
+
+c1_change_sens <- c1_change_sens %>%
+  mutate(
+    quadrant = case_when(
+      obj_resp == 1L & subj_resp == 1L ~ "Concordant responders",
+      obj_resp == 1L & subj_resp == 0L ~ "Discordant (obj yes, subj no)",
+      obj_resp == 0L & subj_resp == 1L ~ "Discordant (obj no, subj yes)",
+      TRUE ~ "Concordant non-responders"
+    )
+  )
+
+p_scatter_sens <- ggplot(c1_change_sens, aes(x = pct_change_MMDs, y = delta_HIT6)) +
+  geom_vline(xintercept = -0.50, linetype = "dashed") +
+  geom_hline(yintercept = -5, linetype = "dashed") +
+  geom_point(aes(shape = factor(discordance)), alpha = 0.85) +
+  labs(
+    title = "Objective vs Subjective Change (Cycle 1, SENS)",
+    x = "MMDs % change (end vs start)",
+    y = "HIT-6 change (end - start)",
+    shape = "Discordance (1 = obj yes, subj no)"
+  )
+
+p_scatter_sens
+ggsave("outputs/task1/figures/scatter_mmds_pct_vs_hit6_delta_sens.png", p_scatter_sens, width = 7, height = 5)
+```
+```{r}
+# ------------------------------------------------------------------
+# Quadrant summary (SENS)
+# ------------------------------------------------------------------
+
+quad_summary_sens <- c1_change_sens %>%
+  count(quadrant, name = "n") %>%
+  mutate(pct = 100 * n / sum(n)) %>%
+  arrange(desc(n))
+
+quad_summary_sens
+readr::write_csv(quad_summary_sens, "outputs/task1/quadrant_summary_sens.csv")
+```
+Finally, we directly compare the main and sensitivity analyses by:
+- reporting discordance prevalence under each strategy;  
+- comparing the direction of key fixed effects (cycle/month) across datasets.
+This provides a compact robustness check of the study’s main claim: objective–subjective mismatch is not an artefact of the imputation strategy.
+
+```{r task1-sens-compare-main-vs-sens, message=FALSE, warning=FALSE}
+# ------------------------------------------------------------------
+# Compare MAIN vs SENS (discordance + fixed effects direction)
+# ------------------------------------------------------------------
+
+# Discordance prevalence
+disc_compare <- tibble::tibble(
+  dataset = c("MAIN (interpolation)", "SENS (LOCF)"),
+  n = c(nrow(c1_change), nrow(c1_change_sens)),
+  discordance_rate = c(mean(c1_change$discordance), mean(c1_change_sens$discordance)),
+  obj_resp_rate = c(mean(c1_change$obj_resp), mean(c1_change_sens$obj_resp)),
+  subj_resp_rate = c(mean(c1_change$subj_resp), mean(c1_change_sens$subj_resp))
+)
+
+disc_compare
+readr::write_csv(disc_compare, "outputs/task1/compare_main_vs_sens_discordance_rates.csv")
+
+# Fixed effects: compare sign/order on the same terms
+fx_mmds_main <- broom.mixed::tidy(mod_mmds, effects = "fixed")
+fx_mmds_sens <- broom.mixed::tidy(mod_mmds_sens, effects = "fixed")
+
+fx_hit6_main <- broom.mixed::tidy(mod_hit6, effects = "fixed")
+fx_hit6_sens <- broom.mixed::tidy(mod_hit6_sens, effects = "fixed")
+
+compare_fx <- dplyr::bind_rows(
+  fx_mmds_main %>% transmute(model = "MMDs", dataset = "MAIN", term, estimate),
+  fx_mmds_sens %>% transmute(model = "MMDs", dataset = "SENS", term, estimate),
+  fx_hit6_main %>% transmute(model = "HIT6", dataset = "MAIN", term, estimate),
+  fx_hit6_sens %>% transmute(model = "HIT6", dataset = "SENS", term, estimate)
+) %>%
+  tidyr::pivot_wider(names_from = dataset, values_from = estimate) %>%
+  mutate(
+    sign_MAIN = sign(MAIN),
+    sign_SENS = sign(SENS),
+    sign_match = (sign_MAIN == sign_SENS)
+  ) %>%
+  arrange(model, term)
+
+compare_fx
+readr::write_csv(compare_fx, "outputs/task1/compare_main_vs_sens_fixed_effects_sign.csv")
+```
+
+
+Results obtained using LOCF imputation are consistent with the main analysis based on linear interpolation.
+
+Both objective (MMDs) and subjective (HIT-6) outcomes show comparable average longitudinal trends, and the proportion of objective and subjective responders remains similar across datasets.
+Importantly, the prevalence of discordant patients is preserved, indicating that the objective–subjective mismatch observed in Cycle 1 is not driven by the specific missing-data handling strategy.
+
+Overall, this sensitivity analysis supports the robustness of the main Task 1 findings.
