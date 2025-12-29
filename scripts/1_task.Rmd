@@ -2,4 +2,370 @@
 title: "1_task"
 output: html_document
 ---
+Task 1: Objective vs Subjective Treatment Response
+
+This task examines the relationship between objective clinical improvement and patient-reported outcomes during anri-CGRP treatment. 
+We first estimate average effects over time using mixed models. Then we quantify the mismatch by defining responders and discordant profiles at the end of Cycle 1. 
+
+```{r setup, message=FALSE, warning=FALSE}
+# ---- Setup ----
+if (!requireNamespace("rstudioapi", quietly = TRUE)) install.packages("rstudioapi")
+library(tidyverse)
+
+# Force working directory to the project root (important because notebooks are in scripts/)
+setwd(rstudioapi::getActiveProject())
+cat("WD set to:", getwd(), "\n")
+
+# Load cleaned datasets produced in 01_setup.Rmd
+baseline <- readRDS("data/processed/baseline_clean.rds")
+long <- readRDS("data/processed/long_clean.rds")
+
+# Output folders
+dir.create("outputs/task1", recursive = TRUE, showWarnings = FALSE)
+dir.create("outputs/task1/figures", recursive = TRUE, showWarnings = FALSE)
+
+```
+
+Analytical dataset: we build a minimal longitudinal dataset containing identifiers, time variables, and the two main outcomes (MMDs and HIT-6). This dataset will be used both for mixed models and for responder/mismatch definitions.
+
+```{r}
+#We require SUBJECT_ID, CYCLE, MONTH, MMDs, HIT6
+required_cols <- c("SUBJECT_ID", "CYCLE", "MONTH", "MMDs", "HIT6")
+stopifnot(all(required_cols %in% names(long)))
+
+data_task1 <- long %>%
+  # Keep only relevant columns (optional variables are kept only if present)
+  dplyr::select(dplyr::any_of(c(
+    "SUBJECT_ID", "CYCLE", "MONTH",
+    "MMDs", "HIT6",
+    "HADSA", "HADSD", "INT", "MIDAS"
+  ))) %>%
+  dplyr::mutate(
+    SUBJECT_ID = factor(SUBJECT_ID),
+    CYCLE = factor(CYCLE),
+    # Keep month as an ordered factor (1, 3, 6, 9, 12)
+    MONTH = factor(as.character(MONTH),
+                   levels = c("1", "3", "6", "9", "12"),
+                   ordered = TRUE)
+  )
+
+cat("Task1 dataset dim:", dim(data_task1), "\n")
+cat("Missingness (MMDs):", mean(is.na(data_task1$MMDs)), "\n")
+cat("Missingness (HIT6):", mean(is.na(data_task1$HIT6)), "\n")
+```
+Mixed models (average effects over time): We fit two separate linear mixed models with a random intercept for each patient. This estimates the average change over time while accounting for repeated measures within subjects.
+
+```{r}
+# Load required packages
+if (!requireNamespace("lme4", quietly = TRUE)) install.packages("lme4")
+if (!requireNamespace("lmerTest", quietly = TRUE)) install.packages("lmerTest")
+
+library(lme4)
+library(lmerTest)
+
+# ---- Model A: Objective outcome (Monthly Migraine Days) ----
+mod_mmds <- lmer(
+  MMDs ~ CYCLE + MONTH + (1 | SUBJECT_ID),
+  data = data_task1,
+  REML = FALSE
+)
+
+# ---- Model B: Subjective outcome (HIT-6) ----
+mod_hit6 <- lmer(
+  HIT6 ~ CYCLE + MONTH + (1 | SUBJECT_ID),
+  data = data_task1,
+  REML = FALSE
+)
+
+# Model summaries (fixed effects + random intercept variance)
+summary(mod_mmds)
+summary(mod_hit6)
+```
+Export model results: we exposrt fixed effects tables (estimate + 95% CI) and create mean +SE trend plots.
+```{r}
+# Packages for tidying model outputs
+if (!requireNamespace("broom.mixed", quietly = TRUE)) install.packages("broom.mixed")
+library(broom.mixed)
+
+# ---- 3.1 Export fixed effects tables (beta, SE, CI) ----
+fx_mmds <- tidy(mod_mmds, effects = "fixed", conf.int = TRUE)
+fx_hit6 <- tidy(mod_hit6, effects = "fixed", conf.int = TRUE)
+
+readr::write_csv(fx_mmds, "outputs/task1_fixed_effects_mmds.csv")
+readr::write_csv(fx_hit6, "outputs/task1_fixed_effects_hit6.csv")
+
+# Print in console for quick inspection
+fx_mmds
+fx_hit6
+
+
+# ---- 3.2 Trend plots: mean ± SE by (CYCLE, MONTH) ----
+# Compute summary statistics per timepoint
+trend <- data_task1 %>%
+  group_by(CYCLE, MONTH) %>%
+  summarise(
+    n_MMDs = sum(!is.na(MMDs)),
+    mean_MMDs = mean(MMDs, na.rm = TRUE),
+    se_MMDs = sd(MMDs, na.rm = TRUE) / sqrt(n_MMDs),
+
+    n_HIT6 = sum(!is.na(HIT6)),
+    mean_HIT6 = mean(HIT6, na.rm = TRUE),
+    se_HIT6 = sd(HIT6, na.rm = TRUE) / sqrt(n_HIT6),
+    .groups = "drop"
+  )
+
+# Plot: MMDs over time
+p_mmds <- ggplot(trend, aes(x = MONTH, y = mean_MMDs, group = CYCLE)) +
+  geom_line() +
+  geom_point() +
+  geom_errorbar(aes(ymin = mean_MMDs - se_MMDs, ymax = mean_MMDs + se_MMDs), width = 0.1) +
+  labs(
+    title = "MMDs over time by cycle",
+    x = "Month",
+    y = "Mean MMDs"
+  )
+
+# Plot: HIT-6 over time
+p_hit6 <- ggplot(trend, aes(x = MONTH, y = mean_HIT6, group = CYCLE)) +
+  geom_line() +
+  geom_point() +
+  geom_errorbar(aes(ymin = mean_HIT6 - se_HIT6, ymax = mean_HIT6 + se_HIT6), width = 0.1) +
+  labs(
+    title = "HIT-6 over time by cycle",
+    x = "Month",
+    y = "Mean HIT-6"
+  )
+
+# Show plots
+p_mmds
+p_hit6
+
+# Save plots
+ggsave("outputs/task1_trend_mmds.png", p_mmds, width = 7, height = 4)
+ggsave("outputs/task1_trend_hit6.png", p_hit6, width = 7, height = 4)
+
+# Save trend table too (useful for the report)
+readr::write_csv(trend, "outputs/task1_trend_summary.csv")
+```
+
+Now we go ahed with the responder definition and discordance. The goals are: 
+- compare objective vs subjective response at the end of Cycle 1
+- define responders using clear, reducible rules;
+-Identify discordat patients (objective responder but not subjective responder)
+
+```{r}
+# ------------------------------------------------------------------
+# 4.1 Select Cycle 1 and prepare time variable
+# ------------------------------------------------------------------
+
+c1 <- data_task1 %>%
+  filter(CYCLE == "1") %>%
+  mutate(
+    # Convert ordered MONTH factor to numeric for comparisons
+    month_num = as.numeric(as.character(MONTH))
+  ) %>%
+  arrange(SUBJECT_ID, month_num)
+
+cat("Cycle 1 rows:", nrow(c1), "\n")
+cat("Unique patients in Cycle 1:", n_distinct(c1$SUBJECT_ID), "\n")
+
+
+# ------------------------------------------------------------------
+# 4.2 Define start of cycle (Month 1)
+# ------------------------------------------------------------------
+# Start-of-cycle values are taken at MONTH == 1
+
+c1_start <- c1 %>%
+  filter(month_num == 1) %>%
+  select(
+    SUBJECT_ID,
+    MMDs_start = MMDs,
+    HIT6_start = HIT6
+  )
+
+cat("Patients with start-of-cycle data:", nrow(c1_start), "\n")
+
+
+# ------------------------------------------------------------------
+# 4.3 Define end of cycle
+# ------------------------------------------------------------------
+# End-of-cycle is defined as:
+# - Month 12 if available
+# - Otherwise, the last observed month within Cycle 1
+
+c1_end <- c1 %>%
+  group_by(SUBJECT_ID) %>%
+  filter(month_num == max(month_num, na.rm = TRUE)) %>%
+  slice_tail(n = 1) %>%
+  ungroup() %>%
+  select(
+    SUBJECT_ID,
+    end_month = month_num,
+    MMDs_end = MMDs,
+    HIT6_end = HIT6
+  )
+
+cat("Patients with end-of-cycle data:", nrow(c1_end), "\n")
+cat("End month distribution:\n")
+print(table(c1_end$end_month, useNA = "ifany"))
+
+
+# ------------------------------------------------------------------
+# 4.4 Merge start and end and compute changes
+# ------------------------------------------------------------------
+# Only patients with both start and end are retained
+
+c1_change <- c1_start %>%
+  inner_join(c1_end, by = "SUBJECT_ID") %>%
+  mutate(
+    # Objective change: percentage change in MMDs
+    # Negative values indicate improvement
+    pct_change_MMDs = (MMDs_end - MMDs_start) / MMDs_start,
+
+    # Subjective change: absolute change in HIT-6
+    # Negative values indicate improvement
+    delta_HIT6 = HIT6_end - HIT6_start
+  )
+
+cat("Patients with valid start/end in Cycle 1:", nrow(c1_change), "\n")
+
+
+# ------------------------------------------------------------------
+# 4.5 Define responders
+# ------------------------------------------------------------------
+# Objective responder:
+# - At least 50% reduction in MMDs
+#
+# Subjective responder:
+# - At least 5-point reduction in HIT-6
+
+c1_change <- c1_change %>%
+  mutate(
+    obj_resp = if_else(
+      !is.na(pct_change_MMDs) & pct_change_MMDs <= -0.50,
+      1L, 0L
+    ),
+    subj_resp = if_else(
+      !is.na(delta_HIT6) & delta_HIT6 <= -5,
+      1L, 0L
+    )
+  )
+
+cat("Objective responder rate:", mean(c1_change$obj_resp), "\n")
+cat("Subjective responder rate:", mean(c1_change$subj_resp), "\n")
+
+
+# ------------------------------------------------------------------
+# 4.6 Define discordance
+# ------------------------------------------------------------------
+# Discordance of interest:
+# - Objective responder == 1
+# - Subjective responder == 0
+
+c1_change <- c1_change %>%
+  mutate(
+    discordance = if_else(
+      obj_resp == 1L & subj_resp == 0L,
+      1L, 0L
+    )
+  )
+
+cat("Discordance rate:", mean(c1_change$discordance), "\n")
+
+
+# ------------------------------------------------------------------
+# 4.7 Save dataset for downstream analyses (Task 2)
+# ------------------------------------------------------------------
+
+readr::write_csv(
+  c1_change,
+  "outputs/task1_cycle1_responder_discordance.csv"
+)
+
+head(c1_change)
+```
+
+
+
+```{r}
+# ------------------------------------------------------------------
+# 5.1 2x2 responder table (Objective vs Subjective)
+# ------------------------------------------------------------------
+
+tab_2x2 <- c1_change %>%
+  count(obj_resp, subj_resp, name = "n") %>%
+  mutate(pct_total = n / sum(n))
+
+# Print table
+tab_2x2
+
+# Save table for reporting
+readr::write_csv(tab_2x2, "outputs/task1_responder_2x2.csv")
+
+
+# Optional: a more readable labeled table
+tab_2x2_labeled <- c1_change %>%
+  mutate(
+    obj_resp_lbl = if_else(obj_resp == 1L, "Objective responder", "Objective non-responder"),
+    subj_resp_lbl = if_else(subj_resp == 1L, "Subjective responder", "Subjective non-responder")
+  ) %>%
+  count(obj_resp_lbl, subj_resp_lbl, name = "n") %>%
+  mutate(pct_total = n / sum(n))
+
+tab_2x2_labeled
+readr::write_csv(tab_2x2_labeled, "outputs/task1_responder_2x2_labeled.csv")
+
+
+# ------------------------------------------------------------------
+# 5.2 Scatter plot: objective vs subjective change (Δ vs Δ)
+# ------------------------------------------------------------------
+# X axis: % change in MMDs (end vs start)
+# Y axis: change in HIT-6 (end - start)
+# Thresholds:
+# - Objective responder: pct_change_MMDs <= -0.50
+# - Subjective responder: delta_HIT6 <= -5
+
+# Create a quadrant label for interpretation (optional but useful)
+c1_change <- c1_change %>%
+  mutate(
+    quadrant = case_when(
+      obj_resp == 1L & subj_resp == 1L ~ "Concordant responders",
+      obj_resp == 1L & subj_resp == 0L ~ "Discordant (obj yes, subj no)",
+      obj_resp == 0L & subj_resp == 1L ~ "Discordant (obj no, subj yes)",
+      TRUE ~ "Concordant non-responders"
+    )
+  )
+
+# Scatter plot
+p_scatter <- ggplot(c1_change, aes(x = pct_change_MMDs, y = delta_HIT6)) +
+  # Decision thresholds
+  geom_vline(xintercept = -0.50, linetype = "dashed") +
+  geom_hline(yintercept = -5, linetype = "dashed") +
+  # Points (shape indicates discordance)
+  geom_point(aes(shape = factor(discordance)), alpha = 0.85) +
+  labs(
+    title = "Objective vs Subjective Change (Cycle 1)",
+    x = "MMDs % change (end vs start)",
+    y = "HIT-6 change (end - start)",
+    shape = "Discordance (1 = obj yes, subj no)"
+  )
+
+p_scatter
+
+# Save the figure
+ggsave("outputs/task1_scatter_delta_vs_delta.png", p_scatter, width = 7, height = 5)
+
+
+# ------------------------------------------------------------------
+# 5.3 Example counts per quadrant (quick summary)
+# ------------------------------------------------------------------
+
+quad_summary <- c1_change %>%
+  count(quadrant, name = "n") %>%
+  mutate(pct = n / sum(n)) %>%
+  arrange(desc(n))
+
+quad_summary
+readr::write_csv(quad_summary, "outputs/task1_quadrant_summary.csv")
+```
 

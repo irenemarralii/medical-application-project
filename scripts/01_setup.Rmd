@@ -6,6 +6,16 @@ This notebook loads the baseline and longitudinal datasets, perfroms basic integ
 
 Medical Application Project - Setup & Load
 
+```{r  setup, message=FALSE, warning=FALSE}
+library(tidyverse)
+
+# Force working directory to the RStudio Project root
+proj_root <- rstudioapi::getActiveProject()
+setwd(proj_root)
+
+cat("WD set to:", getwd(), "\n")
+
+```
 
 ```{r setup-load, message=FALSE, warning=FALSE}
 if (!requireNamespace("tidyverse", quietly = TRUE)) install.packages("tidyverse")
@@ -133,5 +143,17 @@ long <- long %>%
 cat("\n--- Cycle start/end checks ---\n")
 cat("Rows with MONTH==1 (cycle start):", sum(long$is_cycle_start, na.rm = TRUE), "\n")
 cat("Rows with MONTH==12 (cycle end):", sum(long$is_cycle_end, na.rm = TRUE), "\n")
+```
+```{r save-cleaned-data}
+dir.create("data/processed", recursive = TRUE, showWarnings = FALSE)
+
+saveRDS(baseline, "data/processed/baseline_clean.rds")
+saveRDS(long, "data/processed/long_clean.rds")
+
+cat("Saved cleaned datasets in data/processed/\n")
+```
+```{r}
+getwd()
+rstudioapi::getActiveProject()
 ```
 

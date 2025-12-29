@@ -3,3 +3,155 @@ title: "02.preprocessing_missing_imputation"
 output: html_document
 ---
 
+This part audits missing data patterns and prepares imputation outputs. 
+
+```{r setup, message=FALSE, warning=FALSE}
+library(tidyverse)
+
+# Load cleaned objects produced by 01_setup.Rmd
+baseline <- readRDS("data/processed/baseline_clean.rds")
+long <- readRDS("data/processed/long_clean.rds")
+
+# Output folders
+dir.create("outputs", showWarnings = FALSE, recursive = TRUE)
+dir.create("outputs/missing", showWarnings = FALSE, recursive = TRUE)
+
+# Quick sanity checks
+cat("Loaded cleaned datasets.\n")
+cat("baseline dim:", dim(baseline), "\n")
+cat("long dim:", dim(long), "\n")
+cat("Unique subjects baseline:", n_distinct(baseline$SUBJECT_ID), "\n")
+cat("Unique subjects long:", n_distinct(long$SUBJECT_ID), "\n")
+```
+
+Missingness audit: we compute the missing rate for each variable in the baseline dataset. And then we repeat the same procedure for the longitudinal one. 
+```{r missingness-audit}
+# Baseline missing rate per variable
+miss_base <- baseline %>%
+  summarise(across(everything(), ~ mean(is.na(.)))) %>%
+  pivot_longer(everything(), names_to = "variable", values_to = "missing_rate") %>%
+  arrange(desc(missing_rate))
+
+cat("\nTop 10 baseline missing rates:\n")
+print(head(miss_base, 10))
+
+readr::write_csv(miss_base, "outputs/missing/missing_baseline.csv")
+
+# Long missing rate per variable
+miss_long <- long %>%
+  summarise(across(everything(), ~ mean(is.na(.)))) %>%
+  pivot_longer(everything(), names_to = "variable", values_to = "missing_rate") %>%
+  arrange(desc(missing_rate))
+
+cat("\nTop 10 longitudinal missing rates:\n")
+print(head(miss_long, 10))
+
+readr::write_csv(miss_long, "outputs/missing/missing_longitudinal.csv")
+```
+Missingness by timepoint (CYCLE x MONTH) for key outcomes
+```{r}
+# Define key outcomes (use only those that exist)
+key_vars <- c("MMDs", "HIT6", "HADSA", "HADSD", "INT", "MIDAS")
+key_vars <- intersect(key_vars, names(long))
+
+# Compute missingness by cycle and month
+miss_by_time <- long %>%
+  group_by(CYCLE, MONTH) %>%
+  summarise(across(all_of(key_vars),
+                   ~ mean(is.na(.)),
+                   .names = "miss_{.col}"),
+            .groups = "drop")
+
+cat("\nMissingness by cycle/month (first rows):\n")
+print(head(miss_by_time, 10))
+
+# Save for reporting
+readr::write_csv(miss_by_time, "outputs/missing/missing_by_cycle_month.csv")
+
+```
+MICE diagnostics: md.pattern on a baseline subset
+```{r mdpattern-run, fig.width=10, fig.height=6, message=FALSE, warning=FALSE}
+if (!requireNamespace("mice", quietly = TRUE)) install.packages("mice")
+library(mice)
+
+# Select variables (only those available)
+pattern_vars <- intersect(
+  c("AGE_OF_ONSET", "BMI", "HEIGHT", "FAMILIARITY", "Aura", "Psycopathological"),
+  names(baseline)
+)
+
+cat("\nVariables used for md.pattern:\n")
+print(pattern_vars)
+
+if (length(pattern_vars) >= 2) {
+
+  tmp_plot <- baseline %>% select(all_of(pattern_vars))
+
+  # Create short labels for plotting (only rename columns that exist)
+  short_names <- c(
+    "AGE_OF_ONSET" = "onset",
+    "BMI" = "bmi",
+    "HEIGHT" = "height",
+    "FAMILIARITY" = "fam",
+    "Aura" = "aura",
+    "Psycopathological" = "psycho"
+  )
+
+  # Apply renaming safely
+  tmp_plot <- tmp_plot %>%
+    rename_with(~ unname(short_names[.x]),
+                .cols = intersect(names(tmp_plot), names(short_names)))
+
+  # Make text smaller and increase top margin
+  op <- par(cex = 0.9, mar = c(5, 4, 6, 2) + 0.1)
+
+  md.pattern(tmp_plot)
+
+  par(op)
+
+} else {
+  cat("\nNot enough variables found for md.pattern.\n")
+  cat("Available baseline columns are:\n")
+  print(names(baseline))
+}
+
+```
+Export md.pattern table: this step saves the md.pattern output as a table. It is useful for reporting missingness patterns withput relying on the plot. 
+```{r}
+if (length(pattern_vars) >= 2) {
+
+  # Recreate the same temporary dataset used for plotting
+  tmp <- baseline %>% select(all_of(pattern_vars))
+
+  # Short variable names (same as Step 4)
+  short_names <- c(
+    "AGE_OF_ONSET" = "onset",
+    "BMI" = "bmi",
+    "HEIGHT" = "height",
+    "FAMILIARITY" = "fam",
+    "Aura" = "aura",
+    "Psycopathological" = "psycho"
+  )
+
+  # Apply renaming safely (only existing columns)
+  tmp <- tmp %>%
+    rename_with(
+      ~ unname(short_names[.x]),
+      .cols = intersect(names(tmp), names(short_names))
+    )
+
+  # Compute md.pattern without plotting
+  md_tab <- md.pattern(tmp, plot = FALSE)
+
+  # Save table to CSV for the report
+  write.csv(md_tab,
+            "outputs/missing/mdpattern_baseline_subset.csv",
+            row.names = TRUE)
+
+  cat("\nmd.pattern table saved in outputs/missing/mdpattern_baseline_subset.csv\n")
+
+} else {
+  cat("\nStep 5 skipped: not enough variables for md.pattern export.\n")
+}
+```
+
