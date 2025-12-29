@@ -150,27 +150,48 @@ These mixed models estimate the average change over follow-up while accounting f
 Optioanl HADS models are fitted only where available; therefore they involve a smaller sample (only subjects with HADS observed at some visits), so their estimates are not direclty comparable in precision with the MMDs/HIT-6 models.
 
 
-Export model results: we exposrt fixed effects tables (estimate + 95% CI) and create mean +SE trend plots.
-```{r}
+Export model results: we exported fixed effects tables (estimate + 95% CI) and create mean +SE trend plots.
+```{r task1-fixed-effects-main, message=FALSE, warning=FALSE}
+
 # Packages for tidying model outputs
 if (!requireNamespace("broom.mixed", quietly = TRUE)) install.packages("broom.mixed")
 library(broom.mixed)
 
-# ---- 3.1 Export fixed effects tables (beta, SE, CI) ----
-fx_mmds <- tidy(mod_mmds, effects = "fixed", conf.int = TRUE)
-fx_hit6 <- tidy(mod_hit6, effects = "fixed", conf.int = TRUE)
+# ---- Export fixed effects tables (beta, SE, CI) ----
+fx_mmds_main <- tidy(mod_mmds, effects = "fixed", conf.int = TRUE)
+fx_hit6_main <- tidy(mod_hit6, effects = "fixed", conf.int = TRUE)
 
-readr::write_csv(fx_mmds, "outputs/task1_fixed_effects_mmds.csv")
-readr::write_csv(fx_hit6, "outputs/task1_fixed_effects_hit6.csv")
+dir.create("outputs/task1", recursive = TRUE, showWarnings = FALSE)
+
+readr::write_csv(fx_mmds_main, "outputs/task1/fixed_effects_mmds_main.csv")
+readr::write_csv(fx_hit6_main, "outputs/task1/fixed_effects_hit6_main.csv")
+
+# Optional models (if you fitted them in mods_optional)
+if (exists("mods_optional") && length(mods_optional) > 0) {
+  fx_optional_main <- purrr::imap_dfr(
+    mods_optional,
+    ~ tidy(.x, effects = "fixed", conf.int = TRUE) %>% dplyr::mutate(model = .y)
+  )
+  readr::write_csv(fx_optional_main, "outputs/task1/fixed_effects_optional_main.csv")
+}
 
 # Print in console for quick inspection
-fx_mmds
-fx_hit6
+fx_mmds_main
+fx_hit6_main
+```
+Fixed-effects estimates (β), standard errors and 95% confidence intervals were exported for the MMDs and HIT-6 mixed models. These tables summarize the average association of cycle and follow-up month via each outcome, while accounting for within-patient repeated measurements via a random intercept. Optional models (HADS-A/D) were exported only when available.
 
+===============================================================================
+**Core plots (MAIN):** We summarise MMDs and HIT-6 at each scheduled visit (months 1, 3, 6, 9 ,12) within each treatmentcycle and visualize mean ± standard error. This provides an interpretable view of average longitudinal trends and acts as a sanity check before the mismatch/responder analysis.
+```{r task1-core-plots-main, message=FALSE, warning=FALSE}
 
-# ---- 3.2 Trend plots: mean ± SE by (CYCLE, MONTH) ----
+# ---- Trend plots: mean ± SE by (CYCLE, MONTH) ----
+
+#Core plots (MAIN dataset): mean ± trends by (CYCLE, MONTH)
+dir.create("outputs/task1/figures", recursive = TRUE, showWarnings = FALSE)
+
 # Compute summary statistics per timepoint
-trend <- data_task1 %>%
+trend_main <- data_task1_main %>%
   group_by(CYCLE, MONTH) %>%
   summarise(
     n_MMDs = sum(!is.na(MMDs)),
@@ -184,18 +205,20 @@ trend <- data_task1 %>%
   )
 
 # Plot: MMDs over time
-p_mmds <- ggplot(trend, aes(x = MONTH, y = mean_MMDs, group = CYCLE)) +
+p_mmds_main <- ggplot(trend_main, aes(x = MONTH, y = mean_MMDs, group = CYCLE, 
+                                 color = CYCLE)) +
   geom_line() +
   geom_point() +
   geom_errorbar(aes(ymin = mean_MMDs - se_MMDs, ymax = mean_MMDs + se_MMDs), width = 0.1) +
   labs(
-    title = "MMDs over time by cycle",
+    title = "MMDs over time (MAIN)",
     x = "Month",
     y = "Mean MMDs"
   )
 
 # Plot: HIT-6 over time
-p_hit6 <- ggplot(trend, aes(x = MONTH, y = mean_HIT6, group = CYCLE)) +
+p_hit6_main <- ggplot(trend_main, aes(x = MONTH, y = mean_HIT6, group = CYCLE, 
+                                      color = CYCLE)) +
   geom_line() +
   geom_point() +
   geom_errorbar(aes(ymin = mean_HIT6 - se_HIT6, ymax = mean_HIT6 + se_HIT6), width = 0.1) +
@@ -206,28 +229,52 @@ p_hit6 <- ggplot(trend, aes(x = MONTH, y = mean_HIT6, group = CYCLE)) +
   )
 
 # Show plots
-p_mmds
-p_hit6
+p_mmds_main
+p_hit6_main
 
 # Save plots
-ggsave("outputs/task1_trend_mmds.png", p_mmds, width = 7, height = 4)
-ggsave("outputs/task1_trend_hit6.png", p_hit6, width = 7, height = 4)
+ggsave("outputs/task1_trend_mmds_main.png", p_mmds_main, width = 7, height = 4)
+ggsave("outputs/task1_trend_hit6_main.png", p_hit6_main, width = 7, height = 4)
 
-# Save trend table too (useful for the report)
-readr::write_csv(trend, "outputs/task1_trend_summary.csv")
+# Save trend table too 
+readr::write_csv(trend_main, "outputs/task1_trend_summary_main.csv")
 ```
+The resulting figures show the average trajectoreis of objective (MMDs) and subjective (HIT-6) outcomes voer follow-up. We saved both the plots and the aggregated summary table to be reused in the final report.
 
-Now we go ahed with the responder definition and discordance. The goals are: 
-- compare objective vs subjective response at the end of Cycle 1
-- define responders using clear, reducible rules;
--Identify discordat patients (objective responder but not subjective responder)
+```{r task1-spaghetti-mmds-main, message=FALSE, warning=FALSE}
+set.seed(123)
+
+# Sample a subset of patients to avoid overplotting
+sample_ids <- sample(unique(data_task1_main$SUBJECT_ID), 30)
+
+spaghetti_data <- data_task1_main %>%
+  filter(SUBJECT_ID %in% sample_ids)
+
+ggplot(spaghetti_data,
+       aes(x = MONTH, y = MMDs, group = SUBJECT_ID)) +
+  geom_line(alpha = 0.3) +
+  geom_point(alpha = 0.3) +
+  labs(
+    title = "Individual MMDs trajectories (subset of patients)",
+    x = "Month within cycle",
+    y = "MMDs"
+  )
+```
+As an exploratory visualization, we report individual longitudinal trajectories (spaghetti plot) for a subset of patients, highighting the  substantial inter-individual heterogeneity underlying the average trends.
+===============================================================================
+Now we move from average longitudinal trends to a patient-level definition of response in Cycle 1.
+We construct a start/end dataset by selecting Cycle 1 only and extracting, for each subject, baseline values at Month 1 and end-of-cycle values at Month 12 (or, if Month 12 is missing, the last observed month within Cycle 1, consistent with the "last available visit" rule).
+
+We then compute two change metrics:
+- pct_change_MMDs = (MMDs_end − MMDs_start) / MMDs_start (objective percent change; negative values indicate improvement)
+- delta_HIT6 = HIT6_end − HIT6_start (subjective absolute change; negative values indicate improvement)
 
 ```{r}
 # ------------------------------------------------------------------
-# 4.1 Select Cycle 1 and prepare time variable
+# Select Cycle 1 and prepare time variable
 # ------------------------------------------------------------------
 
-c1 <- data_task1 %>%
+c1 <- data_task1_main %>%
   filter(CYCLE == "1") %>%
   mutate(
     # Convert ordered MONTH factor to numeric for comparisons
@@ -240,7 +287,7 @@ cat("Unique patients in Cycle 1:", n_distinct(c1$SUBJECT_ID), "\n")
 
 
 # ------------------------------------------------------------------
-# 4.2 Define start of cycle (Month 1)
+# Define start of cycle (Month 1)
 # ------------------------------------------------------------------
 # Start-of-cycle values are taken at MONTH == 1
 
@@ -256,7 +303,7 @@ cat("Patients with start-of-cycle data:", nrow(c1_start), "\n")
 
 
 # ------------------------------------------------------------------
-# 4.3 Define end of cycle
+# Define end of cycle
 # ------------------------------------------------------------------
 # End-of-cycle is defined as:
 # - Month 12 if available
@@ -280,7 +327,7 @@ print(table(c1_end$end_month, useNA = "ifany"))
 
 
 # ------------------------------------------------------------------
-# 4.4 Merge start and end and compute changes
+# Merge start and end and compute changes
 # ------------------------------------------------------------------
 # Only patients with both start and end are retained
 
@@ -298,9 +345,20 @@ c1_change <- c1_start %>%
 
 cat("Patients with valid start/end in Cycle 1:", nrow(c1_change), "\n")
 
+```
+The resulting dataset (c1_change) contains one row per subject with Cycle 1 start and end measurements and the corresponding change metrics.
+Only subjects with both start-of-cycle and end-of-cycle information are retained (inner_join), ensuring that responder classification is based on complete paired measurements.
+===============================================================================
+In this next step, we will apply pre-specified clinical thresholds to pct_change_MMDs and delta_HIT6 to define objective and subjective responders and identify discordant profiles. 
 
+Now we classify Cycle 1 responses using clinically motivated thresholds. 
+An objective responder is defined as a ≥ 50% reduction in MMDs from Month 1 to Month 12 (pct_change_MMD ≤ -0.50).
+A subjective responder is defined as a ≥ 5-point reduction in HIT-6 (delta_HIT6 ≤ -5), corresponding to the Minimal Important Clinical Difference (MICD) reported in the literature.
+
+We then define discordance as objective response without subjective improvement (obj-resp = 1 & subj_resp = 0) and label concordant responders (obj_resp = 1 & subj_resp = 1)
+```{r task1-responders-discordance, message=FALSE, warning=FALSE} 
 # ------------------------------------------------------------------
-# 4.5 Define responders
+# Define responders and discordance (CYCLE 1)
 # ------------------------------------------------------------------
 # Objective responder:
 # - At least 50% reduction in MMDs
@@ -325,7 +383,7 @@ cat("Subjective responder rate:", mean(c1_change$subj_resp), "\n")
 
 
 # ------------------------------------------------------------------
-# 4.6 Define discordance
+# Define discordance
 # ------------------------------------------------------------------
 # Discordance of interest:
 # - Objective responder == 1
@@ -333,29 +391,33 @@ cat("Subjective responder rate:", mean(c1_change$subj_resp), "\n")
 
 c1_change <- c1_change %>%
   mutate(
-    discordance = if_else(
-      obj_resp == 1L & subj_resp == 0L,
-      1L, 0L
-    )
+    discordance = if_else(obj_resp == 1L & subj_resp == 0L, 1L, 0L),
+    concordant = if_else(obj_resp == 1L & subj_resp == 1L,1L, 0L)
   )
 
-cat("Discordance rate:", mean(c1_change$discordance), "\n")
-
+cat("Discordance rate (obj yes, subj no):", mean(c1_change$discordance), "\n")
+cat("Concordant responder rate (obj yes, subj yes):", mean(c1_change$concordant), "\n")
 
 # ------------------------------------------------------------------
-# 4.7 Save dataset for downstream analyses (Task 2)
+# Save dataset for downstream analyses (Task 2)
 # ------------------------------------------------------------------
-
+dir.create("outputs/task1", recursive = TRUE, showWarnings = FALSE)
 readr::write_csv(
   c1_change,
-  "outputs/task1_cycle1_responder_discordance.csv"
+  "outputs/task1/cycle1_responder_discordance_main.csv"
 )
 
+dplyr::glimpse(c1_change)
 head(c1_change)
 ```
+Using these clinically grounded definitions, we classified each patient at the end of Cycle 1 as an objective responder, a subjective responder, both, or neither.
 
+This classification allows us to explicitly distinguish between:
+-**concordant responder**, who show both a clinically meaningful reduction in Monthly Migraine Days and a relevant improvement in patient-reported impact (HI-6);
+-**discordant responders**, who achieve a substantial objective improvement (≥50% reduction in MMDs) without a corresponding subjective benefit.
 
-
+The resulting dataset('c1_change) contains one rwo per subject with Cycle 1 start/end measurements, response indicators and a binary discordance label.
+This dataset represents the core input for downstream analyses aimed at  characterizing discordant patients and identifying baseline or longitudinal factors associated wiht objective-subjective mismtach (Task 2).
 ```{r}
 # ------------------------------------------------------------------
 # 5.1 2x2 responder table (Objective vs Subjective)
