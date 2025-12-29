@@ -50,7 +50,7 @@ print(head(miss_long, 10))
 
 readr::write_csv(miss_long, "outputs/missing/missing_longitudinal.csv")
 ```
-Missingness by timepoint (CYCLE x MONTH) for key longitudinal outcomes (MMDs, HIT-6, HADS-A/D, INT and MIDAS when available), in order to assess whetehr missing data patterns varied across follow-up visits.
+Missingness by timepoint (CYCLE x MONTH) for key longitudinal outcomes (MMDs, HIT-6, HADS-A/D, INT and MIDAS when available), in order to assess whether missing data patterns varied across follow-up visits.
 ```{r}
 # Define key outcomes (use only those that exist)
 key_vars <- c("MMDs", "HIT6", "HADSA", "HADSD", "INT", "MIDAS")
@@ -94,7 +94,7 @@ if (length(pattern_vars) >= 2) {
   short_names <- c(
     "AGE_OF_ONSET" = "onset",
     "BMI" = "bmi",
-    "HEIGTH" = "heigth",
+    "HEIGTH" = "height",
     "FAMILIARITY" = "fam",
     "Aura" = "aura",
     "Psycopathological" = "psycho"
@@ -121,7 +121,7 @@ if (length(pattern_vars) >= 2) {
 ```
 
 
-Export md.pattern table: this step saves the md.pattern output as a table. It is useful for reporting missingness patterns withput relying on the plot. 
+Export md.pattern table: this step saves the md.pattern output as a table. It is useful for reporting missingness patterns without relying on the plot. 
 ```{r}
 if (length(pattern_vars) >= 2) {
 
@@ -160,7 +160,7 @@ if (length(pattern_vars) >= 2) {
 }
 ```
 Baseline imputation (MICE)
-After inspecting missingenss patterns in a subset of baseline variables (md. pattern), we run a multivariate imputation by chained equations (MICE) model on the selected baseline covariates.
+After inspecting missingness patterns in a subset of baseline variables (md. pattern), we run a multivariate imputation by chained equations (MICE) model on the selected baseline covariates.
 
 The goal is to obtain one completed baseline dataset ('baseline_imp') that we will later merge with the longitudinal data for the main analyses.
 
