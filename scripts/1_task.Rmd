@@ -493,7 +493,7 @@ c1_change <- c1_change %>%
   )
 
 # Scatter plot
-p_scatter <- ggplot(c1_change_sens, aes(x = pct_change_MMDs, y = delta_HIT6)) +
+p_scatter <- ggplot(c1_change, aes(x = pct_change_MMDs, y = delta_HIT6)) +
   # Decision thresholds
   geom_vline(xintercept = -0.50, linetype = "dashed") +
   geom_hline(yintercept = -5, linetype = "dashed") +
@@ -537,17 +537,6 @@ The quadrant summary quantifies how patients are distributed across concordant a
 In particular, the *discordant (obj yes, subj no)* group directly captures the primary mismatch of interest: patients achieving a substantial reduction in migraine frequency without reporting a clinically meaningful improvement in HIT-6.
 Conversely, the *discordant (obj no, subj yes)* group highlights the opposite pattern, i.e., subjective improvement without meeting the objective responder criterion.
 
-**Interpretation of Task 1 (Objective-SUbjective Mismatch)*
-
-On average, both objective and subjective outcomes show a clear improvement over time under anti-CGRP treatment.
-Linear mixed-effects models indicate a significant reduction in Monthly Migraine Days (MMDs) and a parallel decrease in HIT-6 scores across follow-up, suggesting an overall beneficial treatment effect at the population level.
-
-However, patient-level analyses reveal substantial heterogeneity in treatment response.
-Approximately **X% of patients** meet the objective responder criterion (≥50% reduction in MMDs) without achieving a clinically meaningful improvement in HIT-6 (≥5-point reduction), defining a non-negligible group of *discordant responders*.
-
-The scatter plot and quadrant analysis highlight that many patients cluster in the region of marked migraine frequency reduction but limited perceived improvement, indicating that objective efficacy does not uniformly translate into better patient-reported outcomes.
-
-These findings motivate the next step of the analysis, which aims to characterize discordant patients and investigate whether baseline or longitudinal factors—such as anxiety/depression (HADS), sleep-related variables, or comorbidities—are associated with objective–subjective mismatch (Task 2).
 ===============================================================================
 ===============================================================================
 **Sensitivity analysis (LOCF vs interpolation)**
@@ -897,12 +886,26 @@ compare_fx_key <- compare_fx %>%
   filter(term %in% key_terms) %>%
   arrange(model, match(term, key_terms))
 
-compare_fx
+compare_fx_key
 readr::write_csv(compare_fx, "outputs/task1/compare_main_vs_sens_fixed_effects_sign.csv")
 ```
+Fixed-effect directions for the main drivers (cycle contrasts and polynomial month terms) were consistent between MAIN and SENS, indicating that the qualitative association of follow-up time and treatment cycle with both outcomes is not sensitive for the imputation strategy.
+
 Results under  LOCF are qualitatively consistent with the main (interpolation-based) analysis, with similar direction of month/cycle effects and comparable discordance prevalence.
 
 Both objective (MMDs) and subjective (HIT-6) outcomes show comparable average longitudinal trends, and the proportion of objective and subjective responders remains similar across datasets.
 Importantly, the prevalence of discordant patients is preserved, indicating that the objective–subjective mismatch observed in Cycle 1 is not driven by the specific missing-data handling strategy.
 
 Overall, this sensitivity analysis supports the robustness of the main Task 1 findings.
+
+===================================================================
+**Interpretation of Task 1**
+
+On average, both objective (MMDs) and subjective (HIT-6) outcomes improve over time under anti-CGRP treatment, as shown by the mixed-effects models and longitudinal trend plots.
+
+However, patient-level analyses reveal a non-negligible subgroup of discordant patients, who achieve a clinically meaningful reduction in MMDs without a corresponding improvement in HIT-6.
+
+This objective–subjective mismatch is consistently observed across different missing-data handling strategies (interpolation vs LOCF) and end-of-cycle definitions, supporting the robustness of the finding.
+
+These results motivate further investigation into patient-level factors potentially associated with discordance, such as psychological comorbidities (HADS), sleep-related variables, and other baseline characteristics (Task 2).
+
