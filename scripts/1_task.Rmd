@@ -22,9 +22,13 @@ A sensitivity analysis repeats the same workflow under an alternative longitudin
 if (!requireNamespace("rstudioapi", quietly = TRUE)) install.packages("rstudioapi")
 library(tidyverse)
 
-# Force working directory to the project root 
-setwd(rstudioapi::getActiveProject())
-cat("WD set to:", getwd(), "\n")
+# Robust project root handling (works in RStudio, doesn't crash elsewhere)
+if (requireNamespace("rstudioapi", quietly = TRUE) && rstudioapi::isAvailable()) {
+  prj <- rstudioapi::getActiveProject()
+  if (!is.null(prj) && nzchar(prj)) setwd(prj)
+}
+cat("WD:", getwd(), "\n")
+
 
 # Load baseline (clean + imputed version saved in preprocessing step)
 baseline_imp <- readRDS("data/processed/baseline_imputed.rds")
@@ -196,11 +200,11 @@ trend_main <- data_task1_main %>%
   summarise(
     n_MMDs = sum(!is.na(MMDs)),
     mean_MMDs = mean(MMDs, na.rm = TRUE),
-    se_MMDs = sd(MMDs, na.rm = TRUE) / sqrt(n_MMDs),
+    se_MMDs = if_else(n_MMDs > 1, sd(MMDs, na.rm = TRUE) / sqrt(n_MMDs), NA_real_),
 
     n_HIT6 = sum(!is.na(HIT6)),
     mean_HIT6 = mean(HIT6, na.rm = TRUE),
-    se_HIT6 = sd(HIT6, na.rm = TRUE) / sqrt(n_HIT6),
+    se_HIT6 = if_else(n_HIT6 > 1, sd(HIT6, na.rm = TRUE) / sqrt(n_HIT6), NA_real_),
     .groups = "drop"
   )
 
@@ -233,11 +237,11 @@ p_mmds_main
 p_hit6_main
 
 # Save plots
-ggsave("outputs/task1_trend_mmds_main.png", p_mmds_main, width = 7, height = 4)
-ggsave("outputs/task1_trend_hit6_main.png", p_hit6_main, width = 7, height = 4)
+ggsave("outputs/task1/figures/trend_mmds_main.png", p_mmds_main, width = 7, height = 4)
+ggsave("outputs/task1/figures/trend_hit6_main.png", p_hit6_main, width = 7, height = 4)
 
 # Save trend table too 
-readr::write_csv(trend_main, "outputs/task1_trend_summary_main.csv")
+readr::write_csv(trend_main, "outputs/task1/trend_summary_main.csv")
 ```
 The resulting figures show the average trajectoreis of objective (MMDs) and subjective (HIT-6) outcomes over follow-up. We saved both the plots and the aggregated summary table to be reused in the final report.
 
@@ -337,7 +341,11 @@ c1_change <- c1_start %>%
   mutate(
     # Objective change: percentage change in MMDs
     # Negative values indicate improvement
-    pct_change_MMDs = (MMDs_end - MMDs_start) / MMDs_start,
+    pct_change_MMDs = if_else(
+      !is.na(MMDs_start) & MMDs_start > 0,
+      (MMDs_end - MMDs_start) / MMDs_start,
+      NA_real_
+    ),
 
     # Subjective change: absolute change in HIT-6
     # Negative values indicate improvement
@@ -487,10 +495,9 @@ c1_change <- c1_change %>%
       obj_resp == 1L & subj_resp == 0L ~ "Discordant (obj yes, subj no)",
       obj_resp == 0L & subj_resp == 1L ~ "Discordant (obj no, subj yes)",
       TRUE ~ "Concordant non-responders"
-    ), 
-    #Highlight primary discordance of interest (obj yes, subj no)
-    discordant_primary = if_else(obj_resp == 1L & subj_resp == 0L, 1L, 0L)
+    )
   )
+  
 
 # Scatter plot
 p_scatter <- ggplot(c1_change, aes(x = pct_change_MMDs, y = delta_HIT6)) +
@@ -498,7 +505,7 @@ p_scatter <- ggplot(c1_change, aes(x = pct_change_MMDs, y = delta_HIT6)) +
   geom_vline(xintercept = -0.50, linetype = "dashed") +
   geom_hline(yintercept = -5, linetype = "dashed") +
   # Points (shape indicates discordance)
-  geom_point(aes(shape = factor(discordant_primary)), alpha = 0.85) +
+  geom_point(aes(shape = factor(discordance)), alpha = 0.85) +
   labs(
     title = "Objective vs Subjective Change (Cycle 1)",
     x = "MMDs % change (end vs start)",
@@ -513,7 +520,7 @@ ggsave("outputs/task1/figures/scatter_mmds_pct_vs_hit6_delta_main.png", p_scatte
 ```
 The scatter plot provides the core representation of objective-subjective agreement. 
 
-Patients with x ≤ 0.50 but y> -5 fall into the primary discordant region (objective responder without a clinically meaningdul HIT-6 improvement).
+Patients with x ≤ -0.50 but y> -5 fall into the primary discordant region (objective responder without a clinically meaningdul HIT-6 improvement).
 Conversely, patients with x > -0.50 but y ≤-5 show the opposite discordance pattern (subjective improvement without meeting the objective responder definition). This visual summary complements the 2x2 table, by showing the magnitude and variability of changes within each quadrant. 
 
 ===============================================================================
@@ -639,11 +646,11 @@ trend_sens <- data_task1_sens %>%
   summarise(
     n_MMDs = sum(!is.na(MMDs)),
     mean_MMDs = mean(MMDs, na.rm = TRUE),
-    se_MMDs = sd(MMDs, na.rm = TRUE) / sqrt(n_MMDs),
+    se_MMDs = if_else(n_MMDs > 1, sd(MMDs, na.rm = TRUE) / sqrt(n_MMDs), NA_real_),
 
     n_HIT6 = sum(!is.na(HIT6)),
     mean_HIT6 = mean(HIT6, na.rm = TRUE),
-    se_HIT6 = sd(HIT6, na.rm = TRUE) / sqrt(n_HIT6),
+    se_HIT6 = if_else(n_HIT6 > 1, sd(HIT6, na.rm = TRUE) / sqrt(n_HIT6), NA_real_),
     .groups = "drop"
   )
 
@@ -735,7 +742,11 @@ c1_end_sens <- c1_sens %>%
 c1_change_sens <- c1_start_sens %>%
   inner_join(c1_end_sens, by = "SUBJECT_ID") %>%
   mutate(
-    pct_change_MMDs = (MMDs_end - MMDs_start) / MMDs_start,
+    pct_change_MMDs = if_else(
+      !is.na(MMDs_start) & MMDs_start > 0,
+      (MMDs_end - MMDs_start) / MMDs_start,
+      NA_real_
+    ),
     delta_HIT6 = HIT6_end - HIT6_start
   )
 
@@ -791,26 +802,20 @@ c1_change_sens <- c1_change_sens %>%
       obj_resp == 1L & subj_resp == 0L ~ "Discordant (obj yes, subj no)",
       obj_resp == 0L & subj_resp == 1L ~ "Discordant (obj no, subj yes)",
       TRUE ~ "Concordant non-responders"
-    )
+    ),
+    #primary discordance of interest: objective yes, subjective no
+    discordant_primary = if_else(obj_resp == 1L & subj_resp == 0L, 1L, 0L)
   )
-
-c1_change_sens <- c1_change_sens %>%
-  mutate(discordant_primary = if_else(obj_resp == 1L & subj_resp == 0L, 1L, 0L))
-
-geom_point(aes(shape = factor(discordant_primary)), alpha = 0.85)
-
-labs(shape = "Discordance (1 = obj yes, subj no)")
-
 
 p_scatter_sens <- ggplot(c1_change_sens, aes(x = pct_change_MMDs, y = delta_HIT6)) +
   geom_vline(xintercept = -0.50, linetype = "dashed") +
   geom_hline(yintercept = -5, linetype = "dashed") +
-  geom_point(aes(shape = factor(discordance)), alpha = 0.85) +
+  geom_point(aes(shape = factor(discordant_primary)), alpha = 0.85) +
   labs(
     title = "Objective vs Subjective Change (Cycle 1, SENS)",
     x = "MMDs % change (end vs start)",
     y = "HIT-6 change (end - start)",
-    shape = "factor(discordant_primary) (1 = obj yes, subj no)"
+    shape = "Discordance (1 = obj yes, subj no)"
   )
 
 p_scatter_sens
@@ -888,6 +893,7 @@ compare_fx_key <- compare_fx %>%
 
 compare_fx_key
 readr::write_csv(compare_fx, "outputs/task1/compare_main_vs_sens_fixed_effects_sign.csv")
+readr::write_csv(compare_fx_key, "outputs/task1/compare_main_vs_sens_fixed_effects_sign_keyterms.csv")
 ```
 Fixed-effect directions for the main drivers (cycle contrasts and polynomial month terms) were consistent between MAIN and SENS, indicating that the qualitative association of follow-up time and treatment cycle with both outcomes is not sensitive for the imputation strategy.
 
