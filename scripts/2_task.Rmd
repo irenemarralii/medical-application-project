@@ -3,3 +3,57 @@ title: "2_task"
 output: html_document
 ---
 
+Task 2: Factors Associated with Objective-Subjective Discordance (CYCLE 1)
+
+The aim of Task 2 is to investigate why some patients show an objective improvement under anti_CGRP treatment (reduction in Monthly Migraine Days, MMDs) without experiecing a clinically meaningful improvement in patient-reported impact (HIT-6).
+
+In Task 1 we established that this objective-subjective mismatch exists and is robust across alternative missing-data strategies. Task 2 moves from description to explanation by assessing whether baseline clinical and psychosocial characteristics are associated with the discordant profile.
+
+A crucial clinical distinction is that there are two opposite discordance patterns:
+- Unhappy responder (primary focus): objective responder but subjective non-responder (OBJ+ / Subj-).
+- Happy Non-Responder (secondary/opposite pattern): objective non-responder but subjecctive responder (Obj- / Subj+).
+
+Because these profile reflect different mechanisms, the main analysis in Task 2 will focus on the Unhappy Responder outcome, rather than pooling all mismathes into a signle indicator.
+
+**Setup**
+
+```{r}
+  if(requireNamespace("here", quietly = TRUE))
+    install.packages("here")
+library(here)
+library(tidyverse)
+
+cat("Project root:", here::here(), "\n")
+
+# Robust project root handling
+if (requireNamespace("rstudioapi", quietly = TRUE) && rstudioapi::isAvailable()) {
+prj <- rstudioapi::getActiveProject()
+if (!is.null(prj) && nzchar(prj)) setwd(prj)
+}
+cat("WD:", getwd(), "\n")
+if(basename(getwd()) == "scripts") setwd("..")
+cat("WD after fix:", getwd(), "\n")
+
+# Output folders
+dir.create("outputs/task2", recursive = TRUE, showWarnings = FALSE)
+dir.create("outputs/task2/figures", recursive = TRUE, showWarnings = FALSE)
+
+
+# Load patient-level dataset created in Task 1 (MAIN analysis)
+c1_main <- read::read_csv(here::here(
+  "outputs/task1/cycle1_responder_discordance_main.csv"), show_col_types = FALSE)
+
+# Quick sanity checks
+cat("Rows(patients):", nrow(c1_main), "\n")
+cat("Unique subjects:", n_disticnt(c1_main$SUBJECT_ID), "\n")
+
+# Ensure expected columns exist
+stopifnot(all(c("SUBJECT_ID", "obj_resp", "subj_resp") %in% names(c1_main)))
+
+```
+This setup chunk initializes the environment, creates output folders for Task 2, and loads the patient-level Cycle 1 dataset generated in Task 1. The dataset already contains objective and subjective responder indicators (obj_resp, subj_resp), which are required to define the discordance outcomes. 
+
+=================================================================
+**Define discordance outcocmes + counts **
+We now create two distinct binary outcomes to avoid mixing opposite discordance phenomena. The main outcome for the logistic model will be the Unhappy Responder profile (Obj+ / Subj-).
+
