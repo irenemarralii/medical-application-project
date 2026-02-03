@@ -72,7 +72,7 @@ data_task1_main <- data_main %>%
   dplyr::mutate(
     SUBJECT_ID = factor(SUBJECT_ID),
     CYCLE = factor(CYCLE),
-    # Keep month as an ordered factor (1, 3, 6, 9, 12)
+    MONTH_num = as.numeric(as.character(MONTH)),
     MONTH = factor(as.character(MONTH),
                    levels = c("1", "3", "6", "9", "12"),
                    ordered = TRUE)
@@ -86,6 +86,7 @@ data_task1_sens <- data_sens %>%
     SUBJECT_ID = factor(SUBJECT_ID),
     CYCLE = factor(CYCLE),
     # Keep month as an ordered factor (1, 3, 6, 9, 12)
+    MONTH_num = as.numeric(as.character(MONTH)),
     MONTH = factor(as.character(MONTH),
                    levels = c("1", "3", "6", "9", "12"),
                    ordered = TRUE)
@@ -119,14 +120,14 @@ dat <- data_task1_main
 
 # ---- Model A: Objective outcome (Monthly Migraine Days) ----
 mod_mmds <- lmer(
-  MMDs ~ CYCLE + MONTH + (1 | SUBJECT_ID),
+  MMDs ~ CYCLE + MONTH_num + (1 | SUBJECT_ID),
   data = dat,
   REML = FALSE
 )
 
 # ---- Model B: Subjective outcome (HIT-6) ----
 mod_hit6 <- lmer(
-  HIT6 ~ CYCLE + MONTH + (1 | SUBJECT_ID),
+  HIT6 ~ CYCLE + MONTH_num + (1 | SUBJECT_ID),
   data = dat,
   REML = FALSE
 )
@@ -138,20 +139,20 @@ summary(mod_hit6)
 mods_optional <- list()
 
 if("HADSA" %in% names(dat)) {
-  mods_optional$hadsa_main <- lmer(HADSA ~CYCLE + MONTH + (1 | SUBJECT_ID), data = dat, REML = FALSE)
+  mods_optional$hadsa_main <- lmer(HADSA ~CYCLE + MONTH_num + (1 | SUBJECT_ID), data = dat, REML = FALSE)
 }
 
 
 if("HADSD" %in% names(dat)) {
-  mods_optional$hadsd_main <- lmer(HADSD ~ CYCLE + MONTH + (1 | SUBJECT_ID), data = dat, REML = FALSE)
+  mods_optional$hadsd_main <- lmer(HADSD ~ CYCLE + MONTH_num + (1 | SUBJECT_ID), data = dat, REML = FALSE)
 }
 
 if (length(mods_optional) > 0) lapply(mods_optional, summary)
 
 ```
-MONTH is treated as an ordered factor (1, 3, 6, 9, 12), so R reporst polynomial contrats for time: MONTH.L (overall linear trend), MONTH.Q(curvature), MONTH.C (cubic) and MONTH^4(higher-order).
-These mixed models estimate the average change over follow-up while accounting for repeated measurements via a subject-specific random intercept.
-Optioanl HADS models are fitted only where available; therefore they involve a smaller sample (only subjects with HADS observed at some visits), so their estimates are not direclty comparable in precision with the MMDs/HIT-6 models.
+Follow-up time is encoded using the scheduled visit months (1, 3, 6, 9, 12) as a numeric variable (MONTH_num). This avoids polynomial contrast from ordered factors and yields an interpretable fixed effect representing the average change associated with one additional month of follow-up, while still accounting for repeated measurements through a subject-specific random intercept. 
+
+Optional HADS models are fitted only when the corresponding outcomes are available; therefore, estimates may rely on different effective sample sizes and should be interpreted accordingly.  .
 
 
 Export model results: we exported fixed effects tables (estimate + 95% CI) and create mean +SE trend plots.
@@ -567,14 +568,14 @@ dat_sens <- data_task1_sens
 
 # Objective outcome: Monthly Migraine Days
 mod_mmds_sens <- lmer(
-  MMDs ~ CYCLE + MONTH + (1 | SUBJECT_ID),
+  MMDs ~ CYCLE + MONTH_num + (1 | SUBJECT_ID),
   data = dat_sens,
   REML = FALSE
 )
 
 # Subjective outcome: HIT-6
 mod_hit6_sens <- lmer(
-  HIT6 ~ CYCLE + MONTH + (1 | SUBJECT_ID),
+  HIT6 ~ CYCLE + MONTH_num + (1 | SUBJECT_ID),
   data = dat_sens,
   REML = FALSE
 )
@@ -586,12 +587,12 @@ summary(mod_hit6_sens)
 mods_optional_sens <- list()
 
 if ("HADSA" %in% names(dat_sens)) {
-  mods_optional_sens$hadsa_sens <- lmer(HADSA ~ CYCLE + MONTH + (1 | SUBJECT_ID),
+  mods_optional_sens$hadsa_sens <- lmer(HADSA ~ CYCLE + MONTH_num + (1 | SUBJECT_ID),
                                        data = dat_sens, REML = FALSE)
 }
 
 if ("HADSD" %in% names(dat_sens)) {
-  mods_optional_sens$hadsd_sens <- lmer(HADSD ~ CYCLE + MONTH + (1 | SUBJECT_ID),
+  mods_optional_sens$hadsd_sens <- lmer(HADSD ~ CYCLE + MONTH_num + (1 | SUBJECT_ID),
                                        data = dat_sens, REML = FALSE)
 }
 
@@ -734,9 +735,13 @@ c1_end_sens <- c1_sens %>%
   ungroup() %>%
   select(
     SUBJECT_ID,
+    end_month = month_num,
     MMDs_end = MMDs,
     HIT6_end = HIT6
   )
+
+cat("End month distribution (SENS):\n")
+print(table(c1_end_sens$end_month, useNA = "ifany"))
 
 # Merge and compute changes
 c1_change_sens <- c1_start_sens %>%
@@ -885,7 +890,7 @@ compare_fx <- dplyr::bind_rows(
   ) %>%
   arrange(model, term)
 
-key_terms <- c("CYCLE2", "CYCLE3", "MONTH.L", "MONTH.Q", "MONTH.C", "MONTH^4")
+key_terms <- c("CYCLE2", "CYCLE3", "MONTH_num")
 
 compare_fx_key <- compare_fx %>%
   filter(term %in% key_terms) %>%
@@ -895,7 +900,7 @@ compare_fx_key
 readr::write_csv(compare_fx, "outputs/task1/compare_main_vs_sens_fixed_effects_sign.csv")
 readr::write_csv(compare_fx_key, "outputs/task1/compare_main_vs_sens_fixed_effects_sign_keyterms.csv")
 ```
-Fixed-effect directions for the main drivers (cycle contrasts and polynomial month terms) were consistent between MAIN and SENS, indicating that the qualitative association of follow-up time and treatment cycle with both outcomes is not sensitive for the imputation strategy.
+Fixed-effect directions for the main drivers (cycle contrasts and the numeric follow-up time effect, MONTH_num) were consistent between MAIN and SENS, indicating that the qualitative association of follow-up time and treatment cycle with both outcomes is not sensitive for the imputation strategy.
 
 Results under  LOCF are qualitatively consistent with the main (interpolation-based) analysis, with similar direction of month/cycle effects and comparable discordance prevalence.
 

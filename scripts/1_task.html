@@ -426,7 +426,7 @@ data_task1_main &lt;- data_main %&gt;%
   dplyr::mutate(
     SUBJECT_ID = factor(SUBJECT_ID),
     CYCLE = factor(CYCLE),
-    # Keep month as an ordered factor (1, 3, 6, 9, 12)
+    MONTH_num = as.numeric(as.character(MONTH)),
     MONTH = factor(as.character(MONTH),
                    levels = c(&quot;1&quot;, &quot;3&quot;, &quot;6&quot;, &quot;9&quot;, &quot;12&quot;),
                    ordered = TRUE)
@@ -440,6 +440,7 @@ data_task1_sens &lt;- data_sens %&gt;%
     SUBJECT_ID = factor(SUBJECT_ID),
     CYCLE = factor(CYCLE),
     # Keep month as an ordered factor (1, 3, 6, 9, 12)
+    MONTH_num = as.numeric(as.character(MONTH)),
     MONTH = factor(as.character(MONTH),
                    levels = c(&quot;1&quot;, &quot;3&quot;, &quot;6&quot;, &quot;9&quot;, &quot;12&quot;),
                    ordered = TRUE)
@@ -447,13 +448,13 @@ data_task1_sens &lt;- data_sens %&gt;%
 
 
 cat(&quot;Task1 MAIN dim:&quot;, dim(data_task1_main), &quot;\n&quot;)</code></pre>
-<pre><code>## Task1 MAIN dim: 2685 9</code></pre>
+<pre><code>## Task1 MAIN dim: 2685 10</code></pre>
 <pre class="r"><code>cat(&quot;Missingness MAIN (MMDs):&quot;, mean(is.na(data_task1_main$MMDs)), &quot;\n&quot;)</code></pre>
 <pre><code>## Missingness MAIN (MMDs): 0.4</code></pre>
 <pre class="r"><code>cat(&quot;Missingness MAIN (HIT6):&quot;, mean(is.na(data_task1_main$HIT6)), &quot;\n&quot;)</code></pre>
 <pre><code>## Missingness MAIN (HIT6): 0.4197393</code></pre>
 <pre class="r"><code>cat(&quot;Task1 SENS dim:&quot;, dim(data_task1_sens), &quot;\n&quot;)</code></pre>
-<pre><code>## Task1 SENS dim: 2685 9</code></pre>
+<pre><code>## Task1 SENS dim: 2685 10</code></pre>
 <pre class="r"><code>cat(&quot;Missingness SENS (MMDs):&quot;, mean(is.na(data_task1_sens$MMDs)), &quot;\n&quot;)</code></pre>
 <pre><code>## Missingness SENS (MMDs): 0.3445065</code></pre>
 <pre class="r"><code>cat(&quot;Missingness SENS (HIT6):&quot;, mean(is.na(data_task1_sens$HIT6)), &quot;\n&quot;)</code></pre>
@@ -480,14 +481,14 @@ dat &lt;- data_task1_main
 
 # ---- Model A: Objective outcome (Monthly Migraine Days) ----
 mod_mmds &lt;- lmer(
-  MMDs ~ CYCLE + MONTH + (1 | SUBJECT_ID),
+  MMDs ~ CYCLE + MONTH_num + (1 | SUBJECT_ID),
   data = dat,
   REML = FALSE
 )
 
 # ---- Model B: Subjective outcome (HIT-6) ----
 mod_hit6 &lt;- lmer(
-  HIT6 ~ CYCLE + MONTH + (1 | SUBJECT_ID),
+  HIT6 ~ CYCLE + MONTH_num + (1 | SUBJECT_ID),
   data = dat,
   REML = FALSE
 )
@@ -495,182 +496,158 @@ mod_hit6 &lt;- lmer(
 summary(mod_mmds)</code></pre>
 <pre><code>## Linear mixed model fit by maximum likelihood . t-tests use Satterthwaite&#39;s
 ##   method [lmerModLmerTest]
-## Formula: MMDs ~ CYCLE + MONTH + (1 | SUBJECT_ID)
+## Formula: MMDs ~ CYCLE + MONTH_num + (1 | SUBJECT_ID)
 ##    Data: dat
 ## 
 ##       AIC       BIC    logLik -2*log(L)  df.resid 
-##   10243.3   10291.7   -5112.6   10225.3      1602 
+##   10675.9   10708.2   -5332.0   10663.9      1605 
 ## 
 ## Scaled residuals: 
 ##     Min      1Q  Median      3Q     Max 
-## -3.8910 -0.5904 -0.0719  0.5760  4.1658 
+## -3.5902 -0.6257 -0.0550  0.5561  3.3046 
 ## 
 ## Random effects:
 ##  Groups     Name        Variance Std.Dev.
-##  SUBJECT_ID (Intercept) 41.37    6.432   
-##  Residual               25.13    5.013   
+##  SUBJECT_ID (Intercept) 37.88    6.155   
+##  Residual               34.33    5.859   
 ## Number of obs: 1611, groups:  SUBJECT_ID, 179
 ## 
 ## Fixed effects:
-##              Estimate Std. Error        df t value Pr(&gt;|t|)    
-## (Intercept)   14.4643     0.5157  182.0132  28.047  &lt; 2e-16 ***
-## CYCLE2        -1.0302     0.3317 1485.5919  -3.106  0.00193 ** 
-## CYCLE3        -2.0865     0.3480 1491.1323  -5.996 2.54e-09 ***
-## MONTH.L       -6.5318     0.2866 1441.4075 -22.792  &lt; 2e-16 ***
-## MONTH.Q        5.0811     0.2812 1424.8108  18.071  &lt; 2e-16 ***
-## MONTH.C       -2.6958     0.2812 1424.6706  -9.587  &lt; 2e-16 ***
-## MONTH^4        0.4795     0.2793 1424.6396   1.717  0.08627 .  
+##               Estimate Std. Error         df t value Pr(&gt;|t|)    
+## (Intercept)   18.76273    0.54834  250.58502  34.217  &lt; 2e-16 ***
+## CYCLE2        -1.28139    0.38560 1506.03735  -3.323 0.000911 ***
+## CYCLE3        -2.26941    0.40451 1514.11599  -5.610  2.4e-08 ***
+## MONTH_num     -0.70782    0.03772 1445.20769 -18.767  &lt; 2e-16 ***
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
 ## Correlation of Fixed Effects:
-##         (Intr) CYCLE2 CYCLE3 MONTH.L MONTH.Q MONTH.C
-## CYCLE2  -0.169                                      
-## CYCLE3  -0.161  0.464                               
-## MONTH.L  0.047 -0.010 -0.006                        
-## MONTH.Q  0.002  0.003  0.001  0.031                 
-## MONTH.C -0.013 -0.029 -0.013 -0.005   0.050         
-## MONTH^4  0.000 -0.004 -0.001 -0.015   0.005   0.057</code></pre>
+##           (Intr) CYCLE2 CYCLE3
+## CYCLE2    -0.184              
+## CYCLE3    -0.176  0.458       
+## MONTH_num -0.376 -0.012 -0.009</code></pre>
 <pre class="r"><code>summary(mod_hit6)</code></pre>
 <pre><code>## Linear mixed model fit by maximum likelihood . t-tests use Satterthwaite&#39;s
 ##   method [lmerModLmerTest]
-## Formula: HIT6 ~ CYCLE + MONTH + (1 | SUBJECT_ID)
+## Formula: HIT6 ~ CYCLE + MONTH_num + (1 | SUBJECT_ID)
 ##    Data: dat
 ## 
 ##       AIC       BIC    logLik -2*log(L)  df.resid 
-##   12143.0   12191.1   -6062.5   12125.0      1549 
+##   12164.5   12196.6   -6076.3   12152.5      1552 
 ## 
 ## Scaled residuals: 
 ##     Min      1Q  Median      3Q     Max 
-## -4.9372 -0.3414  0.1172  0.5803  2.5003 
+## -4.7546 -0.3354  0.1337  0.5672  2.3815 
 ## 
 ## Random effects:
 ##  Groups     Name        Variance Std.Dev.
-##  SUBJECT_ID (Intercept)  16.44    4.054  
-##  Residual               129.74   11.390  
+##  SUBJECT_ID (Intercept)  16.03    4.004  
+##  Residual               132.37   11.505  
 ## Number of obs: 1558, groups:  SUBJECT_ID, 179
 ## 
 ## Fixed effects:
-##              Estimate Std. Error        df t value Pr(&gt;|t|)    
-## (Intercept)   55.1051     0.5736  422.9295  96.074  &lt; 2e-16 ***
-## CYCLE2         3.0029     0.7121 1501.1795   4.217 2.62e-05 ***
-## CYCLE3        -0.6517     0.7652 1548.4906  -0.852    0.395    
-## MONTH.L      -13.5966     0.6538 1446.2643 -20.795  &lt; 2e-16 ***
-## MONTH.Q        0.2286     0.6477 1411.8012   0.353    0.724    
-## MONTH.C       -2.7057     0.6471 1411.5873  -4.181 3.08e-05 ***
-## MONTH^4       -0.5086     0.6449 1411.8916  -0.789    0.430    
+##               Estimate Std. Error         df t value Pr(&gt;|t|)    
+## (Intercept)   64.47238    0.70616  840.35792  91.300  &lt; 2e-16 ***
+## CYCLE2         3.02464    0.71785 1500.46865   4.213 2.66e-05 ***
+## CYCLE3        -0.63105    0.77214 1549.25068  -0.817    0.414    
+## MONTH_num     -1.52063    0.07449 1448.44030 -20.414  &lt; 2e-16 ***
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
 ## Correlation of Fixed Effects:
-##         (Intr) CYCLE2 CYCLE3 MONTH.L MONTH.Q MONTH.C
-## CYCLE2  -0.583                                      
-## CYCLE3  -0.481  0.445                               
-## MONTH.L  0.084 -0.040 -0.037                        
-## MONTH.Q  0.011 -0.007 -0.007  0.044                 
-## MONTH.C -0.020  0.008  0.009  0.001   0.049         
-## MONTH^4  0.000  0.000  0.000 -0.008   0.004   0.046</code></pre>
+##           (Intr) CYCLE2 CYCLE3
+## CYCLE2    -0.451              
+## CYCLE3    -0.370  0.445       
+## MONTH_num -0.584 -0.041 -0.038</code></pre>
 <pre class="r"><code># Optional models (only if the variables exist)
 mods_optional &lt;- list()
 
 if(&quot;HADSA&quot; %in% names(dat)) {
-  mods_optional$hadsa_main &lt;- lmer(HADSA ~CYCLE + MONTH + (1 | SUBJECT_ID), data = dat, REML = FALSE)
+  mods_optional$hadsa_main &lt;- lmer(HADSA ~CYCLE + MONTH_num + (1 | SUBJECT_ID), data = dat, REML = FALSE)
 }
 
 
 if(&quot;HADSD&quot; %in% names(dat)) {
-  mods_optional$hadsd_main &lt;- lmer(HADSD ~ CYCLE + MONTH + (1 | SUBJECT_ID), data = dat, REML = FALSE)
+  mods_optional$hadsd_main &lt;- lmer(HADSD ~ CYCLE + MONTH_num + (1 | SUBJECT_ID), data = dat, REML = FALSE)
 }
 
 if (length(mods_optional) &gt; 0) lapply(mods_optional, summary)</code></pre>
 <pre><code>## $hadsa_main
 ## Linear mixed model fit by maximum likelihood . t-tests use Satterthwaite&#39;s
 ##   method [lmerModLmerTest]
-## Formula: HADSA ~ CYCLE + MONTH + (1 | SUBJECT_ID)
+## Formula: HADSA ~ CYCLE + MONTH_num + (1 | SUBJECT_ID)
 ##    Data: dat
 ## 
 ##       AIC       BIC    logLik -2*log(L)  df.resid 
-##    5109.2    5151.9   -2545.6    5091.2       832 
+##    5108.9    5137.3   -2548.5    5096.9       835 
 ## 
 ## Scaled residuals: 
 ##     Min      1Q  Median      3Q     Max 
-## -1.5814 -0.3984 -0.1177  0.2162 15.5325 
+## -1.5817 -0.3824 -0.1205  0.2291 15.5802 
 ## 
 ## Random effects:
 ##  Groups     Name        Variance Std.Dev.
-##  SUBJECT_ID (Intercept)  7.465   2.732   
-##  Residual               21.669   4.655   
+##  SUBJECT_ID (Intercept)  7.423   2.724   
+##  Residual               21.837   4.673   
 ## Number of obs: 841, groups:  SUBJECT_ID, 85
 ## 
 ## Fixed effects:
 ##              Estimate Std. Error        df t value Pr(&gt;|t|)    
-## (Intercept)   5.70095    0.46046 190.17064  12.381  &lt; 2e-16 ***
-## CYCLE2       -0.52819    0.42453 839.58696  -1.244  0.21378    
-## CYCLE3       -0.51160    0.43655 756.41966  -1.172  0.24160    
-## MONTH.L      -1.04162    0.36002 765.32744  -2.893  0.00392 ** 
-## MONTH.Q       0.76248    0.35933 756.18684   2.122  0.03417 *  
-## MONTH.C       0.28511    0.35883 756.47652   0.795  0.42712    
-## MONTH^4      -0.04353    0.36028 756.79994  -0.121  0.90387    
+## (Intercept)   6.41259    0.52258 302.87924  12.271  &lt; 2e-16 ***
+## CYCLE2       -0.52305    0.42598 839.73625  -1.228  0.21984    
+## CYCLE3       -0.50944    0.43823 756.61462  -1.162  0.24541    
+## MONTH_num    -0.11415    0.04074 765.55217  -2.802  0.00521 ** 
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
 ## Correlation of Fixed Effects:
-##         (Intr) CYCLE2 CYCLE3 MONTH.L MONTH.Q MONTH.C
-## CYCLE2  -0.628                                      
-## CYCLE3  -0.469  0.508                               
-## MONTH.L  0.013  0.013  0.003                        
-## MONTH.Q -0.003 -0.001 -0.002  0.013                 
-## MONTH.C -0.004 -0.005  0.001 -0.004   0.019         
-## MONTH^4  0.005  0.002 -0.001 -0.001  -0.007   0.017 
+##           (Intr) CYCLE2 CYCLE3
+## CYCLE2    -0.562              
+## CYCLE3    -0.416  0.508       
+## MONTH_num -0.472  0.013  0.003
 ## 
 ## $hadsd_main
 ## Linear mixed model fit by maximum likelihood . t-tests use Satterthwaite&#39;s
 ##   method [lmerModLmerTest]
-## Formula: HADSD ~ CYCLE + MONTH + (1 | SUBJECT_ID)
+## Formula: HADSD ~ CYCLE + MONTH_num + (1 | SUBJECT_ID)
 ##    Data: dat
 ## 
 ##       AIC       BIC    logLik -2*log(L)  df.resid 
-##    4419.1    4461.7   -2200.6    4401.1       832 
+##    4425.2    4453.6   -2206.6    4413.2       835 
 ## 
 ## Scaled residuals: 
 ##     Min      1Q  Median      3Q     Max 
-## -2.4848 -0.5023 -0.1139  0.3412  7.6430 
+## -2.4692 -0.4958 -0.1237  0.3300  7.5262 
 ## 
 ## Random effects:
 ##  Groups     Name        Variance Std.Dev.
-##  SUBJECT_ID (Intercept) 13.801   3.715   
-##  Residual                8.358   2.891   
+##  SUBJECT_ID (Intercept) 13.778   3.712   
+##  Residual                8.492   2.914   
 ## Number of obs: 841, groups:  SUBJECT_ID, 85
 ## 
 ## Fixed effects:
-##             Estimate Std. Error       df t value Pr(&gt;|t|)    
-## (Intercept)   5.1940     0.4649 121.3190  11.173  &lt; 2e-16 ***
-## CYCLE2        0.3261     0.2732 794.8667   1.194  0.23296    
-## CYCLE3        0.5371     0.2712 755.3488   1.981  0.04800 *  
-## MONTH.L      -0.8937     0.2244 760.6165  -3.983 7.45e-05 ***
-## MONTH.Q       0.5907     0.2232 755.5566   2.646  0.00831 ** 
-## MONTH.C      -0.3067     0.2229 755.7245  -1.376  0.16927    
-## MONTH^4       0.2387     0.2239 755.9139   1.066  0.28657    
+##              Estimate Std. Error        df t value Pr(&gt;|t|)    
+## (Intercept)   5.78702    0.48929 148.51554  11.827  &lt; 2e-16 ***
+## CYCLE2        0.32650    0.27533 795.40433   1.186 0.236036    
+## CYCLE3        0.54012    0.27336 755.35899   1.976 0.048534 *  
+## MONTH_num    -0.09578    0.02550 760.68477  -3.756 0.000186 ***
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
 ## Correlation of Fixed Effects:
-##         (Intr) CYCLE2 CYCLE3 MONTH.L MONTH.Q MONTH.C
-## CYCLE2  -0.414                                      
-## CYCLE3  -0.288  0.490                               
-## MONTH.L  0.015  0.008  0.003                        
-## MONTH.Q -0.004  0.000 -0.003  0.012                 
-## MONTH.C -0.005 -0.003  0.001 -0.006   0.020         
-## MONTH^4  0.005  0.000 -0.001  0.001  -0.007   0.017</code></pre>
-<p>MONTH is treated as an ordered factor (1, 3, 6, 9, 12), so R reporst
-polynomial contrats for time: MONTH.L (overall linear trend),
-MONTH.Q(curvature), MONTH.C (cubic) and MONTH^4(higher-order). These
-mixed models estimate the average change over follow-up while accounting
-for repeated measurements via a subject-specific random intercept.
-Optioanl HADS models are fitted only where available; therefore they
-involve a smaller sample (only subjects with HADS observed at some
-visits), so their estimates are not direclty comparable in precision
-with the MMDs/HIT-6 models.</p>
+##           (Intr) CYCLE2 CYCLE3
+## CYCLE2    -0.399              
+## CYCLE3    -0.277  0.490       
+## MONTH_num -0.309  0.008  0.003</code></pre>
+<p>Follow-up time is encoded using the scheduled visit months (1, 3, 6,
+9, 12) as a numeric variable (MONTH_num). This avoids polynomial
+contrast from ordered factors and yields an interpretable fixed effect
+representing the average change associated with one additional month of
+follow-up, while still accounting for repeated measurements through a
+subject-specific random intercept.</p>
+<p>Optional HADS models are fitted only when the corresponding outcomes
+are available; therefore, estimates may rely on different effective
+sample sizes and should be interpreted accordingly. .</p>
 <p>Export model results: we exported fixed effects tables (estimate +
 95% CI) and create mean +SE trend plots.</p>
 <pre class="r"><code># Packages for tidying model outputs
@@ -697,27 +674,21 @@ if (exists(&quot;mods_optional&quot;) &amp;&amp; length(mods_optional) &gt; 0) {
 
 # Print in console for quick inspection
 fx_mmds_main</code></pre>
-<pre><code>## # A tibble: 7 × 9
+<pre><code>## # A tibble: 4 × 9
 ##   effect term     estimate std.error statistic    df  p.value conf.low conf.high
 ##   &lt;chr&gt;  &lt;chr&gt;       &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt; &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;
-## 1 fixed  (Interc…   14.5       0.516     28.0   182. 5.50e-68  13.4       15.5  
-## 2 fixed  CYCLE2     -1.03      0.332     -3.11 1486. 1.93e- 3  -1.68      -0.380
-## 3 fixed  CYCLE3     -2.09      0.348     -6.00 1491. 2.54e- 9  -2.77      -1.40 
-## 4 fixed  MONTH.L    -6.53      0.287    -22.8  1441. 1.90e-98  -7.09      -5.97 
-## 5 fixed  MONTH.Q     5.08      0.281     18.1  1425. 6.98e-66   4.53       5.63 
-## 6 fixed  MONTH.C    -2.70      0.281     -9.59 1425. 3.89e-21  -3.25      -2.14 
-## 7 fixed  MONTH^4     0.480     0.279      1.72 1425. 8.63e- 2  -0.0684     1.03</code></pre>
+## 1 fixed  (Interc…   18.8      0.548      34.2   251. 2.01e-96   17.7      19.8  
+## 2 fixed  CYCLE2     -1.28     0.386      -3.32 1506. 9.11e- 4   -2.04     -0.525
+## 3 fixed  CYCLE3     -2.27     0.405      -5.61 1514. 2.40e- 8   -3.06     -1.48 
+## 4 fixed  MONTH_n…   -0.708    0.0377    -18.8  1445. 1.70e-70   -0.782    -0.634</code></pre>
 <pre class="r"><code>fx_hit6_main</code></pre>
-<pre><code>## # A tibble: 7 × 9
-##   effect term    estimate std.error statistic    df   p.value conf.low conf.high
-##   &lt;chr&gt;  &lt;chr&gt;      &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt; &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;
-## 1 fixed  (Inter…   55.1       0.574    96.1    423. 2.21e-289    54.0     56.2  
-## 2 fixed  CYCLE2     3.00      0.712     4.22  1501. 2.62e-  5     1.61     4.40 
-## 3 fixed  CYCLE3    -0.652     0.765    -0.852 1548. 3.95e-  1    -2.15     0.849
-## 4 fixed  MONTH.L  -13.6       0.654   -20.8   1446. 3.03e- 84   -14.9    -12.3  
-## 5 fixed  MONTH.Q    0.229     0.648     0.353 1412. 7.24e-  1    -1.04     1.50 
-## 6 fixed  MONTH.C   -2.71      0.647    -4.18  1412. 3.08e-  5    -3.98    -1.44 
-## 7 fixed  MONTH^4   -0.509     0.645    -0.789 1412. 4.30e-  1    -1.77     0.756</code></pre>
+<pre><code>## # A tibble: 4 × 9
+##   effect term     estimate std.error statistic    df  p.value conf.low conf.high
+##   &lt;chr&gt;  &lt;chr&gt;       &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt; &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;
+## 1 fixed  (Interc…   64.5      0.706     91.3    840. 0           63.1     65.9  
+## 2 fixed  CYCLE2      3.02     0.718      4.21  1500. 2.66e- 5     1.62     4.43 
+## 3 fixed  CYCLE3     -0.631    0.772     -0.817 1549. 4.14e- 1    -2.15     0.884
+## 4 fixed  MONTH_n…   -1.52     0.0745   -20.4   1448. 1.30e-81    -1.67    -1.37</code></pre>
 <p>Fixed-effects estimates (β), standard errors and 95% confidence
 intervals were exported for the MMDs and HIT-6 mixed models. These
 tables summarize the average association of cycle and follow-up month
@@ -1183,14 +1154,14 @@ dat_sens &lt;- data_task1_sens
 
 # Objective outcome: Monthly Migraine Days
 mod_mmds_sens &lt;- lmer(
-  MMDs ~ CYCLE + MONTH + (1 | SUBJECT_ID),
+  MMDs ~ CYCLE + MONTH_num + (1 | SUBJECT_ID),
   data = dat_sens,
   REML = FALSE
 )
 
 # Subjective outcome: HIT-6
 mod_hit6_sens &lt;- lmer(
-  HIT6 ~ CYCLE + MONTH + (1 | SUBJECT_ID),
+  HIT6 ~ CYCLE + MONTH_num + (1 | SUBJECT_ID),
   data = dat_sens,
   REML = FALSE
 )
@@ -1198,91 +1169,79 @@ mod_hit6_sens &lt;- lmer(
 summary(mod_mmds_sens)</code></pre>
 <pre><code>## Linear mixed model fit by maximum likelihood . t-tests use Satterthwaite&#39;s
 ##   method [lmerModLmerTest]
-## Formula: MMDs ~ CYCLE + MONTH + (1 | SUBJECT_ID)
+## Formula: MMDs ~ CYCLE + MONTH_num + (1 | SUBJECT_ID)
 ##    Data: dat_sens
 ## 
 ##       AIC       BIC    logLik -2*log(L)  df.resid 
-##   11171.3   11220.5   -5576.6   11153.3      1751 
+##   11630.5   11663.3   -5809.2   11618.5      1754 
 ## 
 ## Scaled residuals: 
 ##     Min      1Q  Median      3Q     Max 
-## -3.9930 -0.5914 -0.0397  0.5941  4.2319 
+## -3.7835 -0.6128 -0.0723  0.5315  3.4341 
 ## 
 ## Random effects:
 ##  Groups     Name        Variance Std.Dev.
-##  SUBJECT_ID (Intercept) 49.76    7.054   
-##  Residual               24.57    4.957   
+##  SUBJECT_ID (Intercept) 48.05    6.932   
+##  Residual               33.03    5.747   
 ## Number of obs: 1760, groups:  SUBJECT_ID, 179
 ## 
 ## Fixed effects:
-##              Estimate Std. Error        df t value Pr(&gt;|t|)    
-## (Intercept)   14.7687     0.5527  184.0656  26.723  &lt; 2e-16 ***
-## CYCLE2        -0.8161     0.3164 1632.6539  -2.579  0.00998 ** 
-## CYCLE3        -1.8638     0.3413 1634.5250  -5.461 5.47e-08 ***
-## MONTH.L       -6.1492     0.2653 1575.0409 -23.182  &lt; 2e-16 ***
-## MONTH.Q        5.0525     0.2648 1574.8693  19.082  &lt; 2e-16 ***
-## MONTH.C       -2.7498     0.2642 1574.5337 -10.408  &lt; 2e-16 ***
-## MONTH^4        0.5124     0.2639 1574.3882   1.942  0.05237 .  
+##               Estimate Std. Error         df t value Pr(&gt;|t|)    
+## (Intercept)   18.67127    0.59271  245.64737  31.502  &lt; 2e-16 ***
+## CYCLE2        -0.99660    0.36548 1649.05430  -2.727  0.00646 ** 
+## CYCLE3        -2.00677    0.39427 1651.72976  -5.090 3.99e-07 ***
+## MONTH_num     -0.62944    0.03458 1572.91538 -18.205  &lt; 2e-16 ***
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
 ## Correlation of Fixed Effects:
-##         (Intr) CYCLE2 CYCLE3 MONTH.L MONTH.Q MONTH.C
-## CYCLE2  -0.157                                      
-## CYCLE3  -0.146  0.454                               
-## MONTH.L  0.000 -0.033 -0.015                        
-## MONTH.Q  0.000  0.002  0.001 -0.022                 
-## MONTH.C  0.000 -0.017 -0.007  0.005  -0.011         
-## MONTH^4  0.000  0.000  0.000 -0.005   0.002  -0.003</code></pre>
+##           (Intr) CYCLE2 CYCLE3
+## CYCLE2    -0.159              
+## CYCLE3    -0.153  0.450       
+## MONTH_num -0.362 -0.032 -0.014</code></pre>
 <pre class="r"><code>summary(mod_hit6_sens)</code></pre>
 <pre><code>## Linear mixed model fit by maximum likelihood . t-tests use Satterthwaite&#39;s
 ##   method [lmerModLmerTest]
-## Formula: HIT6 ~ CYCLE + MONTH + (1 | SUBJECT_ID)
+## Formula: HIT6 ~ CYCLE + MONTH_num + (1 | SUBJECT_ID)
 ##    Data: dat_sens
 ## 
 ##       AIC       BIC    logLik -2*log(L)  df.resid 
-##   13022.8   13071.5   -6502.4   13004.8      1663 
+##   13048.2   13080.8   -6518.1   13036.2      1666 
 ## 
 ## Scaled residuals: 
 ##     Min      1Q  Median      3Q     Max 
-## -4.8819 -0.3303  0.1371  0.5671  2.5284 
+## -4.6671 -0.3271  0.1358  0.5582  2.3452 
 ## 
 ## Random effects:
 ##  Groups     Name        Variance Std.Dev.
-##  SUBJECT_ID (Intercept)  26.43    5.141  
-##  Residual               125.21   11.190  
+##  SUBJECT_ID (Intercept)  26.03    5.102  
+##  Residual               127.90   11.309  
 ## Number of obs: 1672, groups:  SUBJECT_ID, 179
 ## 
 ## Fixed effects:
-##              Estimate Std. Error        df t value Pr(&gt;|t|)    
-## (Intercept)   56.5856     0.5907  307.0417  95.787  &lt; 2e-16 ***
-## CYCLE2         2.3814     0.7041 1540.1199   3.382 0.000737 ***
-## CYCLE3        -1.0110     0.7509 1668.7630  -1.346 0.178374    
-## MONTH.L      -11.9230     0.6116 1483.3213 -19.494  &lt; 2e-16 ***
-## MONTH.Q        0.8729     0.6118 1483.1774   1.427 0.153846    
-## MONTH.C       -2.6312     0.6121 1482.9437  -4.299 1.83e-05 ***
-## MONTH^4       -0.4548     0.6122 1482.8359  -0.743 0.457650    
+##               Estimate Std. Error         df t value Pr(&gt;|t|)    
+## (Intercept)   64.79602    0.73262  656.27151  88.444  &lt; 2e-16 ***
+## CYCLE2         2.35869    0.71004 1535.05601   3.322 0.000915 ***
+## CYCLE3        -1.04164    0.75810 1669.41219  -1.374 0.169622    
+## MONTH_num     -1.32404    0.06963 1483.63856 -19.016  &lt; 2e-16 ***
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
 ## Correlation of Fixed Effects:
-##         (Intr) CYCLE2 CYCLE3 MONTH.L MONTH.Q MONTH.C
-## CYCLE2  -0.525                                      
-## CYCLE3  -0.419  0.443                               
-## MONTH.L  0.000 -0.003 -0.001                        
-## MONTH.Q  0.000 -0.003 -0.001 -0.002                 
-## MONTH.C  0.000 -0.002 -0.001 -0.001  -0.001         
-## MONTH^4  0.000 -0.001  0.000  0.000   0.000   0.000</code></pre>
+##           (Intr) CYCLE2 CYCLE3
+## CYCLE2    -0.425              
+## CYCLE3    -0.341  0.442       
+## MONTH_num -0.589 -0.003 -0.001</code></pre>
 <pre class="r"><code># Optional HADS models (only if available)
 mods_optional_sens &lt;- list()
 
 if (&quot;HADSA&quot; %in% names(dat_sens)) {
-  mods_optional_sens$hadsa_sens &lt;- lmer(HADSA ~ CYCLE + MONTH + (1 | SUBJECT_ID),
+  mods_optional_sens$hadsa_sens &lt;- lmer(HADSA ~ CYCLE + MONTH_num + (1 | SUBJECT_ID),
                                        data = dat_sens, REML = FALSE)
 }
 
 if (&quot;HADSD&quot; %in% names(dat_sens)) {
-  mods_optional_sens$hadsd_sens &lt;- lmer(HADSD ~ CYCLE + MONTH + (1 | SUBJECT_ID),
+  mods_optional_sens$hadsd_sens &lt;- lmer(HADSD ~ CYCLE + MONTH_num + (1 | SUBJECT_ID),
                                        data = dat_sens, REML = FALSE)
 }
 
@@ -1290,82 +1249,70 @@ if (length(mods_optional_sens) &gt; 0) lapply(mods_optional_sens, summary)</code
 <pre><code>## $hadsa_sens
 ## Linear mixed model fit by maximum likelihood . t-tests use Satterthwaite&#39;s
 ##   method [lmerModLmerTest]
-## Formula: HADSA ~ CYCLE + MONTH + (1 | SUBJECT_ID)
+## Formula: HADSA ~ CYCLE + MONTH_num + (1 | SUBJECT_ID)
 ##    Data: dat_sens
 ## 
 ##       AIC       BIC    logLik -2*log(L)  df.resid 
-##    5262.7    5305.6   -2622.3    5244.7       861 
+##    5262.6    5291.2   -2625.3    5250.6       864 
 ## 
 ## Scaled residuals: 
 ##     Min      1Q  Median      3Q     Max 
-## -1.6171 -0.3974 -0.1159  0.2258 15.7625 
+## -1.6186 -0.3750 -0.1222  0.2282 15.8048 
 ## 
 ## Random effects:
 ##  Groups     Name        Variance Std.Dev.
-##  SUBJECT_ID (Intercept)  7.683   2.772   
-##  Residual               21.036   4.587   
+##  SUBJECT_ID (Intercept)  7.661   2.768   
+##  Residual               21.196   4.604   
 ## Number of obs: 870, groups:  SUBJECT_ID, 85
 ## 
 ## Fixed effects:
 ##              Estimate Std. Error        df t value Pr(&gt;|t|)    
-## (Intercept)   5.71071    0.45797 195.37360  12.469  &lt; 2e-16 ***
-## CYCLE2       -0.55722    0.41739 869.07862  -1.335  0.18223    
-## CYCLE3       -0.56522    0.42770 781.65809  -1.322  0.18671    
-## MONTH.L      -1.05773    0.34771 781.65809  -3.042  0.00243 ** 
-## MONTH.Q       0.75570    0.34771 781.65809   2.173  0.03005 *  
-## MONTH.C       0.23444    0.34771 781.65809   0.674  0.50034    
-## MONTH^4      -0.09548    0.34771 781.65809  -0.275  0.78369    
+## (Intercept)   6.42116    0.51932 301.88406  12.364   &lt;2e-16 ***
+## CYCLE2       -0.55573    0.41882 869.17742  -1.327   0.1849    
+## CYCLE3       -0.56522    0.42931 781.67156  -1.317   0.1884    
+## MONTH_num    -0.11481    0.03932 781.67156  -2.920   0.0036 ** 
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
 ## Correlation of Fixed Effects:
-##         (Intr) CYCLE2 CYCLE3 MONTH.L MONTH.Q MONTH.C
-## CYCLE2  -0.632                                      
-## CYCLE3  -0.467  0.512                               
-## MONTH.L  0.000  0.000  0.000                        
-## MONTH.Q  0.000  0.000  0.000  0.000                 
-## MONTH.C  0.000  0.000  0.000  0.000   0.000         
-## MONTH^4  0.000  0.000  0.000  0.000   0.000   0.000 
+##           (Intr) CYCLE2 CYCLE3
+## CYCLE2    -0.559              
+## CYCLE3    -0.413  0.513       
+## MONTH_num -0.469  0.000  0.000
 ## 
 ## $hadsd_sens
 ## Linear mixed model fit by maximum likelihood . t-tests use Satterthwaite&#39;s
 ##   method [lmerModLmerTest]
-## Formula: HADSD ~ CYCLE + MONTH + (1 | SUBJECT_ID)
+## Formula: HADSD ~ CYCLE + MONTH_num + (1 | SUBJECT_ID)
 ##    Data: dat_sens
 ## 
 ##       AIC       BIC    logLik -2*log(L)  df.resid 
-##    4561.7    4604.6   -2271.9    4543.7       861 
+##    4568.4    4597.0   -2278.2    4556.4       864 
 ## 
 ## Scaled residuals: 
 ##     Min      1Q  Median      3Q     Max 
-## -2.5139 -0.4865 -0.1038  0.3537  7.7467 
+## -2.5016 -0.4904 -0.1134  0.3554  7.6309 
 ## 
 ## Random effects:
 ##  Groups     Name        Variance Std.Dev.
-##  SUBJECT_ID (Intercept) 14.47    3.804   
-##  Residual                8.24    2.871   
+##  SUBJECT_ID (Intercept) 14.449   3.801   
+##  Residual                8.374   2.894   
 ## Number of obs: 870, groups:  SUBJECT_ID, 85
 ## 
 ## Fixed effects:
-##             Estimate Std. Error       df t value Pr(&gt;|t|)    
-## (Intercept)   5.1920     0.4706 120.8177  11.034  &lt; 2e-16 ***
-## CYCLE2        0.3488     0.2707 823.2671   1.289  0.19793    
-## CYCLE3        0.6043     0.2677 783.9896   2.258  0.02424 *  
-## MONTH.L      -0.8687     0.2176 783.9896  -3.992 7.17e-05 ***
-## MONTH.Q       0.6113     0.2176 783.9896   2.809  0.00509 ** 
-## MONTH.C      -0.2708     0.2176 783.9896  -1.244  0.21373    
-## MONTH^4       0.2617     0.2176 783.9896   1.203  0.22947    
+##              Estimate Std. Error        df t value Pr(&gt;|t|)    
+## (Intercept)   5.76124    0.49545 147.39087  11.628  &lt; 2e-16 ***
+## CYCLE2        0.35002    0.27287 823.79219   1.283 0.199937    
+## CYCLE3        0.60435    0.26984 783.97846   2.240 0.025395 *  
+## MONTH_num    -0.09198    0.02471 783.97846  -3.722 0.000212 ***
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
 ## Correlation of Fixed Effects:
-##         (Intr) CYCLE2 CYCLE3 MONTH.L MONTH.Q MONTH.C
-## CYCLE2  -0.408                                      
-## CYCLE3  -0.284  0.494                               
-## MONTH.L  0.000  0.000  0.000                        
-## MONTH.Q  0.000  0.000  0.000  0.000                 
-## MONTH.C  0.000  0.000  0.000  0.000   0.000         
-## MONTH^4  0.000  0.000  0.000  0.000   0.000   0.000</code></pre>
+##           (Intr) CYCLE2 CYCLE3
+## CYCLE2    -0.391              
+## CYCLE3    -0.272  0.494       
+## MONTH_num -0.309  0.000  0.000</code></pre>
 <p>We export fixed-effects tables (β, SE, 95% CI) for the SENS mixed
 models using the same tidying procedure adopted in the main analysis.
 This enables an immediate comparison of the direction and relative
@@ -1395,27 +1342,21 @@ if (exists(&quot;mods_optional_sens&quot;) &amp;&amp; length(mods_optional_sens)
 }
 
 fx_mmds_sens</code></pre>
-<pre><code>## # A tibble: 7 × 9
-##   effect term    estimate std.error statistic    df   p.value conf.low conf.high
-##   &lt;chr&gt;  &lt;chr&gt;      &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt; &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;
-## 1 fixed  (Inter…   14.8       0.553     26.7   184. 2.91e- 65 13.7        15.9  
-## 2 fixed  CYCLE2    -0.816     0.316     -2.58 1633. 9.98e-  3 -1.44       -0.196
-## 3 fixed  CYCLE3    -1.86      0.341     -5.46 1635. 5.47e-  8 -2.53       -1.19 
-## 4 fixed  MONTH.L   -6.15      0.265    -23.2  1575. 1.57e-102 -6.67       -5.63 
-## 5 fixed  MONTH.Q    5.05      0.265     19.1  1575. 3.41e- 73  4.53        5.57 
-## 6 fixed  MONTH.C   -2.75      0.264    -10.4  1575. 1.40e- 24 -3.27       -2.23 
-## 7 fixed  MONTH^4    0.512     0.264      1.94 1574. 5.24e-  2 -0.00526     1.03</code></pre>
+<pre><code>## # A tibble: 4 × 9
+##   effect term     estimate std.error statistic    df  p.value conf.low conf.high
+##   &lt;chr&gt;  &lt;chr&gt;       &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt; &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;
+## 1 fixed  (Interc…   18.7      0.593      31.5   246. 3.03e-88   17.5      19.8  
+## 2 fixed  CYCLE2     -0.997    0.365      -2.73 1649. 6.46e- 3   -1.71     -0.280
+## 3 fixed  CYCLE3     -2.01     0.394      -5.09 1652. 3.99e- 7   -2.78     -1.23 
+## 4 fixed  MONTH_n…   -0.629    0.0346    -18.2  1573. 2.37e-67   -0.697    -0.562</code></pre>
 <pre class="r"><code>fx_hit6_sens</code></pre>
-<pre><code>## # A tibble: 7 × 9
-##   effect term    estimate std.error statistic    df   p.value conf.low conf.high
-##   &lt;chr&gt;  &lt;chr&gt;      &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt; &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;
-## 1 fixed  (Inter…   56.6       0.591    95.8    307. 9.20e-231   55.4      57.7  
-## 2 fixed  CYCLE2     2.38      0.704     3.38  1540. 7.37e-  4    1.00      3.76 
-## 3 fixed  CYCLE3    -1.01      0.751    -1.35  1669. 1.78e-  1   -2.48      0.462
-## 4 fixed  MONTH.L  -11.9       0.612   -19.5   1483. 1.55e- 75  -13.1     -10.7  
-## 5 fixed  MONTH.Q    0.873     0.612     1.43  1483. 1.54e-  1   -0.327     2.07 
-## 6 fixed  MONTH.C   -2.63      0.612    -4.30  1483. 1.83e-  5   -3.83     -1.43 
-## 7 fixed  MONTH^4   -0.455     0.612    -0.743 1483. 4.58e-  1   -1.66      0.746</code></pre>
+<pre><code>## # A tibble: 4 × 9
+##   effect term     estimate std.error statistic    df  p.value conf.low conf.high
+##   &lt;chr&gt;  &lt;chr&gt;       &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt; &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;
+## 1 fixed  (Interc…    64.8     0.733      88.4   656. 0          63.4      66.2  
+## 2 fixed  CYCLE2       2.36    0.710       3.32 1535. 9.15e- 4    0.966     3.75 
+## 3 fixed  CYCLE3      -1.04    0.758      -1.37 1669. 1.70e- 1   -2.53      0.445
+## 4 fixed  MONTH_n…    -1.32    0.0696    -19.0  1484. 2.52e-72   -1.46     -1.19</code></pre>
 <p>===============================================================================
 We replicate the “core” descriptive trend plots on the SENS dataset
 (LOCF), summarising mean ± standard error at each scheduled follow-up
@@ -1527,11 +1468,18 @@ c1_end_sens &lt;- c1_sens %&gt;%
   ungroup() %&gt;%
   select(
     SUBJECT_ID,
+    end_month = month_num,
     MMDs_end = MMDs,
     HIT6_end = HIT6
   )
 
-# Merge and compute changes
+cat(&quot;End month distribution (SENS):\n&quot;)</code></pre>
+<pre><code>## End month distribution (SENS):</code></pre>
+<pre class="r"><code>print(table(c1_end_sens$end_month, useNA = &quot;ifany&quot;))</code></pre>
+<pre><code>## 
+##  12 
+## 179</code></pre>
+<pre class="r"><code># Merge and compute changes
 c1_change_sens &lt;- c1_start_sens %&gt;%
   inner_join(c1_end_sens, by = &quot;SUBJECT_ID&quot;) %&gt;%
   mutate(
@@ -1703,35 +1651,29 @@ compare_fx &lt;- dplyr::bind_rows(
   ) %&gt;%
   arrange(model, term)
 
-key_terms &lt;- c(&quot;CYCLE2&quot;, &quot;CYCLE3&quot;, &quot;MONTH.L&quot;, &quot;MONTH.Q&quot;, &quot;MONTH.C&quot;, &quot;MONTH^4&quot;)
+key_terms &lt;- c(&quot;CYCLE2&quot;, &quot;CYCLE3&quot;, &quot;MONTH_num&quot;)
 
 compare_fx_key &lt;- compare_fx %&gt;%
   filter(term %in% key_terms) %&gt;%
   arrange(model, match(term, key_terms))
 
 compare_fx_key</code></pre>
-<pre><code>## # A tibble: 12 × 7
-##    model term       MAIN    SENS sign_MAIN sign_SENS sign_match
-##    &lt;chr&gt; &lt;chr&gt;     &lt;dbl&gt;   &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt; &lt;lgl&gt;     
-##  1 HIT6  CYCLE2    3.00    2.38          1         1 TRUE      
-##  2 HIT6  CYCLE3   -0.652  -1.01         -1        -1 TRUE      
-##  3 HIT6  MONTH.L -13.6   -11.9          -1        -1 TRUE      
-##  4 HIT6  MONTH.Q   0.229   0.873         1         1 TRUE      
-##  5 HIT6  MONTH.C  -2.71   -2.63         -1        -1 TRUE      
-##  6 HIT6  MONTH^4  -0.509  -0.455        -1        -1 TRUE      
-##  7 MMDs  CYCLE2   -1.03   -0.816        -1        -1 TRUE      
-##  8 MMDs  CYCLE3   -2.09   -1.86         -1        -1 TRUE      
-##  9 MMDs  MONTH.L  -6.53   -6.15         -1        -1 TRUE      
-## 10 MMDs  MONTH.Q   5.08    5.05          1         1 TRUE      
-## 11 MMDs  MONTH.C  -2.70   -2.75         -1        -1 TRUE      
-## 12 MMDs  MONTH^4   0.480   0.512         1         1 TRUE</code></pre>
+<pre><code>## # A tibble: 6 × 7
+##   model term        MAIN   SENS sign_MAIN sign_SENS sign_match
+##   &lt;chr&gt; &lt;chr&gt;      &lt;dbl&gt;  &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt; &lt;lgl&gt;     
+## 1 HIT6  CYCLE2     3.02   2.36          1         1 TRUE      
+## 2 HIT6  CYCLE3    -0.631 -1.04         -1        -1 TRUE      
+## 3 HIT6  MONTH_num -1.52  -1.32         -1        -1 TRUE      
+## 4 MMDs  CYCLE2    -1.28  -0.997        -1        -1 TRUE      
+## 5 MMDs  CYCLE3    -2.27  -2.01         -1        -1 TRUE      
+## 6 MMDs  MONTH_num -0.708 -0.629        -1        -1 TRUE</code></pre>
 <pre class="r"><code>readr::write_csv(compare_fx, &quot;outputs/task1/compare_main_vs_sens_fixed_effects_sign.csv&quot;)
 readr::write_csv(compare_fx_key, &quot;outputs/task1/compare_main_vs_sens_fixed_effects_sign_keyterms.csv&quot;)</code></pre>
-<p>Fixed-effect directions for the main drivers (cycle contrasts and
-polynomial month terms) were consistent between MAIN and SENS,
-indicating that the qualitative association of follow-up time and
-treatment cycle with both outcomes is not sensitive for the imputation
-strategy.</p>
+<p>Fixed-effect directions for the main drivers (cycle contrasts and the
+numeric follow-up time effect, MONTH_num) were consistent between MAIN
+and SENS, indicating that the qualitative association of follow-up time
+and treatment cycle with both outcomes is not sensitive for the
+imputation strategy.</p>
 <p>Results under LOCF are qualitatively consistent with the main
 (interpolation-based) analysis, with similar direction of month/cycle
 effects and comparable discordance prevalence.</p>
