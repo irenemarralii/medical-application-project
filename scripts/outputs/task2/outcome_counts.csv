@@ -1,3 +1,3 @@
-outcome,n_yes,n_total,pct_yes
-unhappy_responder,17,179,9.497206703910615
-happy_nonresponder,25,179,13.966480446927374
+outcome,n_total,n_classifiable,n_yes,pct_yes_among_classifiable
+unhappy_responder,179,138,7,5.072463768115942
+happy_nonresponder,179,138,33,23.91304347826087

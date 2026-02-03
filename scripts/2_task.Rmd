@@ -5,15 +5,18 @@ output: html_document
 
 Task 2: Factors Associated with Objective-Subjective Discordance (CYCLE 1)
 
-The aim of Task 2 is to investigate why some patients show an objective improvement under anti_CGRP treatment (reduction in Monthly Migraine Days, MMDs) without experiecing a clinically meaningful improvement in patient-reported impact (HIT-6).
+The aim of Task 2 is to investigate why some patients show an objective improvement under anti-CGRP treatment (reduction in Monthly Migraine Days, MMDs) without experiencing a clinically meaningful improvement in patient-reported impact (HIT-6).
 
-In Task 1 we established that this objective-subjective mismatch exists and is robust across alternative missing-data strategies. Task 2 moves from description to explanation by assessing whether baseline clinical and psychosocial characteristics are associated with the discordant profile.
+Task 1 showed that, despite average improvements in both MMDs and HIT-6, a clinically relevant subgroup achieves a ≥50% reduction in MMDs without a meaningful HIT-6 improvement (OBJ+ / Subj−). This mismatch remained stable under alternative missing-data handling (interpolation vs LOCF) and under the “last available visit” end-of-cycle rule. Task 2 therefore focuses on explaining this phenomenon by testing whether baseline demographic, clinical, and psychosocial characteristics are associated with the probability of being an “Unhappy responder” (objective responder without subjective improvement).
 
-A crucial clinical distinction is that there are two opposite discordance patterns:
-- Unhappy responder (primary focus): objective responder but subjective non-responder (OBJ+ / Subj-).
-- Happy Non-Responder (secondary/opposite pattern): objective non-responder but subjecctive responder (Obj- / Subj+).
+From a clinical perspective, this analysis aims to identify patients who biologically respond to treatment but remain highly impacted in daily life, suggesting unmet needs beyond headache frequency reduction.
 
-Because these profile reflect different mechanisms, the main analysis in Task 2 will focus on the Unhappy Responder outcome, rather than pooling all mismathes into a signle indicator.
+A crucial clinical distinction is that there are two opposite discordance patterns: 
+- Unhappy responder (primary focus): objective responder but subjective non-responder (OBJ+ / Subj-). 
+- Happy Non-Responder (secondary/opposite pattern): objective non-responder but subjective responder (Obj- / Subj+).
+The happy non-responder profile is retained for descriptive purposes and potential future analyses, but it is not modeled in the main logistic regression.
+
+Because these profiles reflect different mechanisms, the main analysis in Task 2 will focus on the Unhappy Responder outcome, rather than pooling all mismatches into a single indicator.
 
 **Setup**
 
@@ -70,7 +73,7 @@ stopifnot(all(c("SUBJECT_ID", "obj_resp", "subj_resp", "discordance") %in% names
 This setup chunk initializes the environment, creates output folders for Task 2, and loads the patient-level Cycle 1 dataset generated in Task 1. The dataset already contains objective and subjective responder indicators (obj_resp, subj_resp), which are required to define the discordance outcomes. 
 
 ---
-**Define discordance outcocmes + counts **
+**Define discordance outcomes + counts **
 We now create two distinct binary outcomes to avoid mixing opposite discordance phenomena. The main outcome for the logistic model will be the Unhappy Responder profile (Obj+ / Subj-).
 
 ```{r task2-step20-outcome, message=FALSE, warning=FALSE}
@@ -80,9 +83,18 @@ We now create two distinct binary outcomes to avoid mixing opposite discordance 
 
 c1_main <- c1_main %>%
   mutate(
-    unhappy_responder = as.integer(obj_resp == 1L & subj_resp == 0L),
-    happy_nonresponder = as.integer(obj_resp == 0L & subj_resp == 1L)
+    unhappy_responder = case_when(
+      is.na(obj_resp) | is.na(subj_resp) ~ NA_integer_,
+      obj_resp == 1L & subj_resp == 0L ~ 1L,
+      TRUE ~ 0L
+    ),
+    happy_nonresponder = case_when(
+      is.na(obj_resp) | is.na(subj_resp) ~ NA_integer_,
+      obj_resp == 0L & subj_resp == 1L ~ 1L,
+      TRUE ~ 0L
+    )
   )
+
 
 # Counts
 tab_unhappy <- table(c1_main$unhappy_responder, useNA = "ifany")
@@ -91,14 +103,19 @@ tab_happy <- table(c1_main$happy_nonresponder, useNA = "ifany")
 cat("Unhappy responders (1=yes):\n"); print(tab_unhappy)
 cat("\nHappy non-responders (1=yes):\n"); print(tab_happy)
 
+# Classifiable patients (obj/subj non NA)
+c1_class <- c1_main %>% filter(!is.na(obj_resp), !is.na(subj_resp))
+
 # Summary table
 outcome_counts <- tibble(
-outcome = c("unhappy_responder", "happy_nonresponder"),
-n_yes = c(sum(c1_main$unhappy_responder == 1, na.rm = TRUE),
-sum(c1_main$happy_nonresponder == 1, na.rm = TRUE)),
-n_total = c(nrow(c1_main), nrow(c1_main)),
-pct_yes = 100 * n_yes / n_total
+  outcome = c("unhappy_responder", "happy_nonresponder"),
+  n_total = nrow(c1_main),
+  n_classifiable = nrow(c1_class),
+  n_yes = c(sum(c1_class$obj_resp == 1 & c1_class$subj_resp == 0),
+            sum(c1_class$obj_resp == 0 & c1_class$subj_resp == 1)),
+  pct_yes_among_classifiable = 100 * n_yes / n_classifiable
 )
+
 outcome_counts
 readr::write_csv(outcome_counts, "outputs/task2/outcome_counts.csv")
 ```
@@ -151,7 +168,7 @@ baseline <- readRDS(file_baseline)
 # safety: 1 row per subject
 baseline <- baseline %>% distinct(SUBJECT_ID, .keep_all = TRUE)
 
-# merge (keeps Task 1 analytic sample)
+# merge 
 task2_df <- c1_main %>%
   left_join(baseline, by = "SUBJECT_ID")
 
@@ -167,7 +184,6 @@ if ("AGE" %in% names(task2_df)) {
 # save
 readr::write_csv(task2_df, "outputs/task2/task2_cycle1_analytic_raw.csv")
 ```
-
 **Four-profile clinical classification**
 
 For descriptive purposes and sanity checks, patients are additionally classified into four mutually exclusive response profiles based on the combination of objective and subjective response:
@@ -213,3 +229,600 @@ profile_counts$pct <- 100 * profile_counts$n / sum(profile_counts$n)
 print(profile_counts)
 readr::write_csv(profile_counts, "outputs/task2/profile4_counts.csv")
 ```
+These four response profiles are reported to provide a clinically intuitive overview of response patterns. We then evaluated data completeness after baseline merging to determine which covariates could be reliably included in regression models without excessive loss of sample size.
+
+**Baseline heatmap across the 4 response profiles**
+To descriptively compare baseline characteristics across the four objective-subjective response profiles, we visualized standardized baseline variables (z-scores) in a heatmap. This provides an intuitive "baseline fingerprint" of each profile bfore any regression modeling.
+
+```{r task2-step22b-heatmap-wow, message=FALSE, warning=FALSE}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(stringr)
+
+# ------------------------------------------------------------
+# Baseline profile heatmap (WOW + still paper-like)
+# - Adds n per profile in y-axis labels
+# - Orders profiles in a clinically meaningful way
+# ------------------------------------------------------------
+
+vars_cont <- c("AGE", "GGCEF_T0", "INT_T0")
+var_labels <- c(
+  AGE = "Age",
+  GGCEF_T0 = "GGCEF_T0 (disability)",
+  INT_T0 = "INT_T0 (pain intensity)"
+)
+
+# 1) Choose a "clinical" order for profiles (edit if you prefer another)
+profile_order <- c(
+  "Concordant responder (OBJ+ / Subj+)",
+  "Unhappy responder (OBJ+ / Subj-)",
+  "Happy non-responder (OBJ- / Subj+)",
+  "Concordant non-responder (OBJ- / Subj-)"
+)
+
+# 2) n per profile (classifiable only)
+profile_n <- task2_df %>%
+  filter(!is.na(profile_4)) %>%
+  count(profile_4, name = "n")
+
+# 3) Build heatmap data: global z-score then mean within profile
+hm_df <- task2_df %>%
+  select(profile_4, all_of(vars_cont)) %>%
+  filter(!is.na(profile_4)) %>%
+  mutate(across(all_of(vars_cont), ~ as.numeric(scale(.)), .names = "{.col}_z")) %>%
+  group_by(profile_4) %>%
+  summarise(across(ends_with("_z"), ~ mean(.x, na.rm = TRUE)), .groups = "drop") %>%
+  pivot_longer(-profile_4, names_to = "var", values_to = "mean_z") %>%
+  mutate(var = gsub("_z$", "", var)) %>%
+  left_join(profile_n, by = "profile_4") %>%
+  mutate(
+    # y-label with n
+    profile_label = sprintf("%s (n=%d)", profile_4, n),
+
+    # enforce order
+    profile_4 = factor(profile_4, levels = profile_order),
+    profile_label = factor(profile_label,
+                           levels = sprintf("%s (n=%d)", profile_order,
+                                            profile_n$n[match(profile_order, profile_n$profile_4)])),
+
+    # x labels
+    var = factor(var, levels = vars_cont, labels = unname(var_labels[vars_cont])),
+
+    # text color switch (better contrast on strong colors)
+    txt_col = ifelse(abs(mean_z) >= 0.45, "white", "grey15")
+  )
+
+# 4) Plot
+p_hm <- ggplot(hm_df, aes(x = var, y = profile_label, fill = mean_z)) +
+  geom_tile(color = "white", linewidth = 0.8, width = 0.98, height = 0.92) +
+  geom_text(aes(label = sprintf("%.2f", mean_z), color = txt_col),
+            size = 4, fontface = "bold") +
+  scale_color_identity() +
+  scale_fill_gradient2(
+    low = "#2b6cb0", mid = "white", high = "#c53030",
+    midpoint = 0, name = "Mean z"
+  ) +
+  labs(
+    title = "Baseline profile heatmap (Cycle 1 response profiles)",
+    subtitle = "Cells show mean baseline z-scores (standardized across the full sample); descriptive only",
+    x = NULL, y = NULL
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    plot.subtitle = element_text(size = 11, color = "grey30"),
+    axis.text.x = element_text(size = 10),
+    axis.text.y = element_text(size = 10),
+    panel.grid = element_blank(),
+    legend.position = "right",
+    legend.title = element_text(size = 10),
+    legend.text = element_text(size = 9),
+    plot.margin = margin(10, 14, 10, 10)
+  )
+
+p_hm
+
+ggsave(
+  filename = "outputs/task2/figures/heatmap_profile4_baseline.png",
+  plot = p_hm,
+  width = 8.6, height = 3.9, dpi = 300
+)
+```
+The heatmap provides a descriptive overview of baseline characteristics across the four objective-subjective response profiles. Unhappy responders tend to show lower baseline pain intensity and disability compared to other groups, while age differences appear modest. These patterns are purely descriptive and are not intended as inferential evidence. 
+
+**Post-merge missingness check (Task 2)**
+
+Before model specification, we assessed residual missingness after merging the Task 1 patient-level dataset with baseline predictors, to ensure that the analytic dataset used for logistic regression was complete for the selected covariates.
+
+```{r task2-step22-missingness-postmerge, message=FALSE, warning=FALSE}
+# ------------------------------------------------------------
+# Missingness check AFTER merge (Task 2)
+# ------------------------------------------------------------
+
+na_postmerge <- task2_df %>%
+  summarise(across(everything(), ~ sum(is.na(.)))) %>%
+  pivot_longer(everything(), names_to = "variable", values_to = "n_na") %>%
+  mutate(
+    n = nrow(task2_df),
+    pct_na = 100 * n_na / n
+  ) %>%
+  arrange(desc(pct_na))
+
+readr::write_csv(na_postmerge, "outputs/task2/missingness_postmerge.csv")
+
+na_postmerge %>% filter(pct_na > 0) %>% print(n = 50)
+na_postmerge %>% 
+  filter(variable %in% c("AGE","SEX","DIAGNOSIS","GGCEF_T0","INT_T0"))
+
+```
+Based on the post-merge missingness assessment, several baseline variables showed a high proportion of missing values (>50%), reflecting their limited availability in the baseline dataset. 
+
+To avoid substantial loss of sample size and overfitting in the logistic regression models, variables with excessive missingness were not considered as primary predictors. 
+
+The main analyses therefore focused on baseline covariates with complete data coverage, with selected near-complete variables evaluated in secondary analyses.
+
+No additional multivariate imputation was performed at this stage, as baseline imputation had already been addressed during preprocessing (Task 1), and the present step aimed only to assess residual missingness after data integration.
+
+**Love plot of missing values**
+```{r}
+# ------------------------------------------------------------
+# Missingness overview (visual) — save figure
+# ------------------------------------------------------------
+
+library(dplyr)
+library(ggplot2)
+
+miss_plot_df <- na_postmerge %>%
+  filter(pct_na > 0) %>%
+  arrange(desc(pct_na)) %>%
+  mutate(variable = factor(variable, levels = variable))
+
+p_missing <- ggplot(miss_plot_df, aes(x = pct_na, y = variable)) +
+  geom_segment(
+    aes(x = 0, xend = pct_na, yend = variable),
+    linewidth = 0.9,
+    color = "grey70"
+  ) +
+  geom_point(
+    size = 3,
+    color = "#2b6cb0"
+  ) +
+  labs(
+    title = "Baseline missingness after data integration",
+    subtitle = "Percentage of missing values per variable (Cycle 1)",
+    x = "Missingness (%)",
+    y = NULL
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    plot.subtitle = element_text(size = 11, color = "grey30"),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.y = element_blank()
+  )
+
+p_missing
+
+ggsave(
+  filename = "outputs/task2/figures/missingness_loveplot.png",
+  plot = p_missing,
+  width = 7.5,
+  height = 4.8,
+  dpi = 300
+)
+
+```
+The missingness profile highlights substantial heterogeneity in baseline data availability after dataset integration. While core demographic and baseline severity variables (AGE; GGCEF_T0, INT_T0) show minimal missingness, several clinical and comorbidity-related variables exhibit high proprotions of missing values (>50%).
+
+To avoid excessive losso of samples size and unstable model estimates, subsequent analyses were restricted to predictors with near-complete data coverage. This informed the selection of candidate predictors and supports the use of parimonious, univariable models given the limited number of outcome events.
+
+**Selection of candidate predictors**
+Based on data availability and clinical relevance, candidate baseline predictors for the logistic regression models were restricted to variables with complete or near-complete data coverage, including demographic characteristics, baseline migraine severity, and selected psychosocial measures.
+
+In practice, the primary models focused on predictors with near-complete coverage (AGE, SEX, DIAGNOSIS, GGCEF_T0, INT_T0, and baseline HADS-A/HADS-D when available), while variables with very high missingness (e.g., sleep disorders and psychopathological comorbidity) were not included in the main model and were considered only in exploratory analyses when feasible.
+
+**Predictor cleaning and standardization**
+Prior to model estimation, candidate predictors were recoded and standardized to ensure interpretability and comparability of regression coefficients. Categorical variables were encoded as factors with clinically meaningful reference levels, while continuous predictors were standardized using z-scores, allowing odds ratios to be interpreted per one standard deviation increase.
+
+```{r task2-step23-standarize, message=FALSE, warning=FALSE}
+# ------------------------------------------------------------
+#  Standardization of continuous predictors
+# ------------------------------------------------------------
+
+task2_df <- task2_df %>%
+  mutate(
+    # Outcome (keep binary, factor only for clarity in summaries)
+    unhappy_responder = factor(unhappy_responder, levels = c(0, 1)),
+
+    # Categorical predictors
+    SEX = factor(SEX),
+    DIAGNOSIS = factor(DIAGNOSIS),
+
+    # Continuous predictors (z-score)
+    AGE_z     = as.numeric(scale(AGE)),
+    GGCEF_T0_z = as.numeric(scale(GGCEF_T0)),
+    INT_T0_z   = as.numeric(scale(INT_T0))
+
+    # Optional (ONLY if you decide to include them later)
+    # HADSA_z = as.numeric(scale(HADSA)),
+    # HADSD_z = as.numeric(scale(HADSD))
+  )
+
+# Save model-ready dataset
+readr::write_csv(
+  task2_df,
+  "outputs/task2/task2_cycle1_model_ready.csv"
+)
+
+```
+
+**Events per variable (EPV) assessment**
+Before fitting logistic regression models, we evaluated the number of available outcome events to limit overfitting. The number of unhappy responders was used to determine the maximum number of predictors that could be included in multivariable models, following standard events-per-variable (EPV) recommendations.
+```{r}
+# ------------------------------------------------------------
+# Events per variable (EPV) check
+# ------------------------------------------------------------
+
+# Count outcome events
+n_total <- nrow(task2_df)
+n_events <- sum(task2_df$unhappy_responder == 1, na.rm = TRUE)
+
+cat("Total patients:", n_total, "\n")
+cat("Unhappy responders (events):", n_events, "\n")
+
+# EPV rules
+max_predictors_conservative <- floor(n_events / 10)
+max_predictors_less_conservative <- floor(n_events / 5)
+
+epv_table <- tibble(
+  rule = c("EPV ≥ 10 (conservative)", "EPV ≥ 5 (less conservative)"),
+  max_predictors = c(
+    max_predictors_conservative,
+    max_predictors_less_conservative
+  )
+)
+
+epv_table
+```
+The number of unhappy responders was low (n = 7), resulting in a very limited number of outcome events. According to standard events-per-variable (EPV) recommendations, this would allow at most one predictor under a less conservative rule (EPV ≥ 5), and no predictors under a conservative rule (EPV ≥ 10).
+
+Consequently, fully adjusted multivariable logistic regression models were not statistically appropriate. The subsequent analyses therefore focus on parsimonious models and exploratory associations, interpreted with caution, rather than on definitive multivariable inference.
+
+Given the very low number of outcome events, regression analyses were restricted to models with at most one predictor. As a result, multicollinearity diagnostics (e.g., variance inflation factors) were not applicable and were not performed
+
+**Univariable logistic regression: baseline migraine burden (GGCEF_T0)**
+
+Given the very low number of outcome events, the association between baseline migraine burden and the probability of being an unhappy responder was evaluated using a univariable logistic regression model.
+
+GGCEF_T0 was selected a priori as a clinically relevant indicator of baseline disease severity, capturing the overall migraine burden before treatment initiation. Continuous predictors were standardized, allowing odds ratios to be interpreted per one standard deviation increase.
+
+```{r}
+# ------------------------------------------------------------
+# Univariable logistic regression: GGCEF_T0
+# ------------------------------------------------------------
+
+mod_ggcef <- glm(
+  unhappy_responder ~ GGCEF_T0_z,
+  data = task2_df,
+  family = binomial
+)
+
+summary(mod_ggcef)
+
+```
+```{r}
+# OR and 95% CI
+or_ggcef <- exp(coef(mod_ggcef))
+ci_ggcef <- exp(confint(mod_ggcef))
+
+res_ggcef <- tibble(
+  predictor = "GGCEF_T0 (per 1 SD increase)",
+  OR = or_ggcef[2],
+  CI_low = ci_ggcef[2,1],
+  CI_high = ci_ggcef[2,2],
+  p_value = summary(mod_ggcef)$coefficients[2,4],
+  n_total = nrow(task2_df),
+  n_events = sum(task2_df$unhappy_responder == 1, na.rm = TRUE)
+)
+
+res_ggcef
+
+```
+Baseline headache-related disability (GGCEF_T0), standardized prior to analysis, was not meaningfully associated with the probability of being an unhappy responder. A one–standard deviation increase in GGCEF_T0 was associated with slightly lower odds of objective–subjective discordance (OR ≈ 0.85), but this effect was small and not statistically significant (p = 0.65).
+
+The wide confidence interval indicates substantial uncertainty, largely driven by the very low number of outcome events (n = 7). As such, this finding does not support a clear association between baseline disability and discordant treatment response and should be interpreted as exploratory.
+
+
+**Univariable logistic regression: baseline pain intensity (INT_T0)**
+
+Baseline pain intensity represents a core clinical dimension of migraine severity and may influence how patients perceive treatment benefit beyond headache frequency reduction. To explore this hypothesis, the association between baseline pain intensity and the probability of being an unhappy responder was evaluated using a univariable logistic regression model.
+
+INT_T0 was standardized prior to analysis, allowing odds ratios to be interpreted per one standard deviation increase.
+
+```{r}
+# ------------------------------------------------------------
+# Univariable logistic regression: INT_T0
+# ------------------------------------------------------------
+
+mod_int <- glm(
+  unhappy_responder ~ INT_T0_z,
+  data = task2_df,
+  family = binomial
+)
+
+summary(mod_int)
+
+```
+```{r}
+# OR and 95% CI
+or_int <- exp(coef(mod_int))
+ci_int <- exp(confint(mod_int))
+
+res_int <- tibble(
+  predictor = "INT_T0 (per 1 SD increase)",
+  OR = or_int[2],
+  CI_low = ci_int[2,1],
+  CI_high = ci_int[2,2],
+  p_value = summary(mod_int)$coefficients[2,4],
+  n_total = nrow(task2_df),
+  n_events = sum(task2_df$unhappy_responder == 1, na.rm = TRUE)
+)
+
+res_int
+
+```
+Baseline treatment intensity (INT_T0), standardized prior to analysis, showed an inverse association with the probability of being an unhappy responder. Specifically, a one–standard deviation increase in INT_T0 was associated with lower odds of objective–subjective discordance (OR ≈ 0.52).
+
+However, this association did not reach conventional statistical significance (p = 0.08), and the confidence interval was wide, reflecting substantial uncertainty due to the very low number of outcome events (n = 7). These results should therefore be interpreted as exploratory and hypothesis-generating rather than confirmatory.
+
+**Univariable logistic regression: AGE**
+Age was evaluated as a continuous predictor using a univariable logistic regression model.  
+The variable was standardized prior to analysis to allow odds ratios to be interpreted per one standard deviation increase and to ensure comparability with other continuous predictors.
+
+```{r}
+# ------------------------------------------------------------
+# Univariable logistic regression: AGE
+# ------------------------------------------------------------
+
+mod_age <- glm(
+  unhappy_responder ~ AGE_z,
+  data = task2_df,
+  family = binomial
+)
+
+summary(mod_age)
+```
+
+```{r}
+# OR and 95% CI
+
+or_age <- exp(coef(mod_age))
+ci_age <- exp(confint(mod_age))
+
+res_age <- tibble(
+  predictor = "Age (per 1 SD increase)",
+  OR = or_age[2],
+  CI_low = ci_age[2, 1],
+  CI_high = ci_age[2, 2],
+  p_value = summary(mod_age)$coefficients[2, 4],
+  n_total = nrow(task2_df),
+  n_events = sum(task2_df$unhappy_responder == 1, na.rm = TRUE)
+)
+
+res_age
+
+```
+Age was not significantly associated with the probability of being an unhappy responder.  
+The estimated odds ratio per one standard deviation increase in age was below one, but the confidence interval was wide and included the null value, reflecting substantial uncertainty due to the low number of outcome events (n = 7).
+
+This analysis is therefore considered exploratory and does not provide evidence for a robust association between age and outcome.
+
+**Univariable logistic regression: SEX**
+Sex was evaluated as a categorical predictor using a univariable logistic regression model.  
+The reference category was set according to the default factor coding in the dataset.
+
+```{r}
+# ------------------------------------------------------------
+# Univariable logistic regression: SEX
+# ------------------------------------------------------------
+
+mod_sex <- glm(
+  unhappy_responder ~ SEX,
+  data = task2_df,
+  family = binomial
+)
+
+summary(mod_sex)
+
+```
+```{r}
+# OR and 95% CI
+or_sex <- exp(coef(mod_sex))
+ci_sex <- exp(confint(mod_sex))
+
+res_sex <- tibble(
+  predictor = "Sex (reference category)",
+  OR = or_sex[2],
+  CI_low = ci_sex[2, 1],
+  CI_high = ci_sex[2, 2],
+  p_value = summary(mod_sex)$coefficients[2, 4],
+  n_total = nrow(task2_df),
+  n_events = sum(task2_df$unhappy_responder == 1, na.rm = TRUE)
+)
+
+res_sex
+
+```
+Sex was not associated with the probability of being an unhappy responder. The estimated odds ratio comparing males to the reference category was close to one, and the confidence interval was wide and included the null value, indicating no evidence of a meaningful association.
+
+Given the very small number of outcome events (n = 7), this result should be interpreted with caution and considered exploratory.
+
+**Univariable logistic regression: DIAGNOSIS**
+Baseline diagnosis was evaluated as a categorical predictor using a univariable logistic regression model.
+```{r}
+# ------------------------------------------------------------
+# Univariable logistic regression: DIAGNOSIS
+# ------------------------------------------------------------
+
+mod_diag <- glm(
+  unhappy_responder ~ DIAGNOSIS,
+  data = task2_df,
+  family = binomial
+)
+
+summary(mod_diag)
+
+```
+```{r}
+# OR and 95% CI
+or_diag <- exp(coef(mod_diag))
+ci_diag <- exp(confint(mod_diag))
+
+res_diag <- tibble(
+  predictor = names(or_diag)[-1],
+  OR = or_diag[-1],
+  CI_low = ci_diag[-1, 1],
+  CI_high = ci_diag[-1, 2],
+  p_value = summary(mod_diag)$coefficients[-1, 4],
+  n_total = nrow(task2_df),
+  n_events = sum(task2_df$unhappy_responder == 1, na.rm = TRUE)
+)
+
+res_diag
+
+```
+The analysis of baseline diagnosis was affected by quasi-complete separation, as indicated by numerical warnings and extremely large coefficient estimates.
+
+Odds ratios and confidence intervals were unstable and not interpretable, reflecting sparse data within diagnosis categories and the very low number of outcome events (n = 7).  
+
+For this reason, no reliable association between diagnosis and the unhappy responder profile can be inferred from this model, and diagnosis was not considered further in inferential analyses.
+
+**Results table**
+
+```{r}
+# ------------------------------------------------------------
+# Collect univariable model results in a "raw" table
+# (Keep numeric CI_low / CI_high for plotting)
+# ------------------------------------------------------------
+
+results_raw <- bind_rows(
+  res_ggcef,
+  res_int,
+  res_age,
+  res_sex
+)
+
+# ------------------------------------------------------------
+# Create a clean table for reporting (pretty CI as text)
+# ------------------------------------------------------------
+
+results_table <- results_raw %>%
+  transmute(
+    Predictor = predictor,
+    OR = round(OR, 2),
+    `95% CI` = paste0(round(CI_low, 2), " – ", round(CI_high, 2)),
+    `p-value` = round(p_value, 3),
+    `N events` = n_events
+  )
+
+results_table
+readr::write_csv(results_table, "outputs/task2/univariable_results_table.csv")
+
+```
+**Forest plot (exploratory)**
+To visually summarize the exploratory univariable associations, we created a forest plot reporting odds ratios (ORs) and 95% confidence intervals on a log scale. Predictors are grouped by type (continuous vs categorical). Estimates are interpreted with caution due to the very small number of outcome events (n=7).
+
+```{r task2-step25-forestplot-wow, message=FALSE, warning=FALSE}
+library(dplyr)
+library(ggplot2)
+
+plot_df <- results_raw %>%
+  mutate(
+    type = ifelse(grepl("per 1 SD", predictor), "Continuous", "Categorical"),
+    label = sprintf("%.2f [%.2f–%.2f]", OR, CI_low, CI_high),
+    direction = ifelse(OR < 1, "Lower odds", "Higher odds"),
+    predictor = factor(predictor, levels = rev(predictor))
+  )
+
+p_forest <- ggplot(plot_df, aes(x = OR, y = predictor)) +
+  # reference line
+  geom_vline(xintercept = 1, linetype = "dashed", color = "grey50") +
+
+  # CI
+  geom_errorbarh(
+    aes(xmin = CI_low, xmax = CI_high),
+    height = 0.18, linewidth = 0.9, color = "grey40"
+  ) +
+
+  # points
+  geom_point(
+    aes(color = type, shape = direction),
+    size = 3.4, stroke = 1
+  ) +
+
+  # text labels with OR [CI]
+  geom_text(
+    aes(x = CI_high * 1.25, label = label),
+    size = 3.4, hjust = 0, color = "grey20"
+  ) +
+
+  scale_x_log10(
+    breaks = c(0.3, 0.5, 1, 2, 3),
+    labels = c("0.3", "0.5", "1", "2", "3")
+  ) +
+
+  scale_color_manual(
+    values = c(
+      "Continuous" = "#EE1289",
+      "Categorical" = "#00B2EE"
+    )
+  ) +
+
+  scale_shape_manual(
+    values = c(
+      "Lower odds" = 16,
+      "Higher odds" = 17
+    )
+  ) +
+
+  coord_cartesian(clip = "off") +
+
+  labs(
+    title = "Exploratory univariable associations with Unhappy responder",
+    subtitle = "Odds ratios (OR) and 95% confidence intervals (log scale); n events = 7",
+    x = "Odds Ratio (log scale)",
+    y = NULL,
+    color = "Predictor type",
+    shape = "Direction"
+  ) +
+
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    plot.subtitle = element_text(size = 11, color = "grey30"),
+    legend.position = "top",
+    panel.grid.minor = element_blank(),
+    panel.grid.major.y = element_blank(),
+    axis.text.y = element_text(size = 11),
+    plot.margin = margin(10, 120, 10, 10)
+  )
+
+p_forest
+
+ggsave(
+  "outputs/task2/figures/forestplot_univariable.png",
+  plot = p_forest,
+  width = 9.5, height = 4.8, dpi = 300
+)
+```
+The forest plot summarizes exploratory univariable associations between baseline characteristics and the probability of being an unhappy responder.
+
+All estimates show wide confidence intervals including the null value, reflecting substantial uncertainty due to the very limited number of outcome events (n=7). No predictor shows a robust association with the outcome.
+
+Baseline pain intensity (INT_T0) suggests a trend toward lower odds of discordance, while age, baseline migraine burden and sex show no clear directional effect. Results should be interpreted as exploratory.
+
+**Limitations**
+The main limitation of this analysis is the very small number of outcome events (n=7), which severely limits statistical power and prevents reliable multivariable modeling.
+All analyses should therefore be interpreted as exploratory and hypothesis-generating.
+Larger samples will be required to identify clinically meaningful predictors of objective-subjective discordance.
