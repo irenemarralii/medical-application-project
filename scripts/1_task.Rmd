@@ -43,7 +43,7 @@ dir.create("outputs/task1/figures", recursive = TRUE, showWarnings = FALSE)
 
 # Quick checks
 cat("Rows (main):", nrow(data_main), "\n")
-cat("Row (sens):", nrow(data_sens), "\n")
+cat("Rows (sens):", nrow(data_sens), "\n")
 cat("Unique subjects (main):", n_distinct(data_main$SUBJECT_ID), "\n")
 cat("Unique subjects (sens):", n_distinct(data_sens$SUBJECT_ID), "\n")
 
@@ -317,6 +317,7 @@ cat("Patients with start-of-cycle data:", nrow(c1_start), "\n")
 
 c1_end <- c1 %>%
   group_by(SUBJECT_ID) %>%
+  filter(!all(is.na(month_num))) %>%
   filter(month_num == max(month_num, na.rm = TRUE)) %>%
   slice_tail(n = 1) %>%
   ungroup() %>%
@@ -365,7 +366,7 @@ In this next step, we will apply pre-specified clinical thresholds to pct_change
 
 Now we classify Cycle 1 responses using clinically motivated thresholds. 
 An objective responder is defined as a ≥ 50% reduction in MMDs from Month 1 to Month 12 (pct_change_MMD ≤ -0.50).
-A subjective responder is defined as a ≥ 5-point reduction in HIT-6 (delta_HIT6 ≤ -5), corresponding to the Minimal Important Clinical Difference (MICD) reported in the literature.
+A subjective responder is defined as a ≥ 5-point reduction in HIT-6 (delta_HIT6 ≤ -5), corresponding to the Minimal Important Clinical Difference (MCID) reported in the literature.
 
 We then define discordance as objective response without subjective improvement (obj-resp = 1 & subj_resp = 0) and label concordant responders (obj_resp = 1 & subj_resp = 1)
 
@@ -830,8 +831,10 @@ We reproduce the mismatch outputs on the SENS dataset:
 # ------------------------------------------------------------------
 
 tab_2x2_sens <- c1_change_sens %>%
-  count(obj_resp, subj_resp, name = "n", .drop = FALSE) %>%
+  filter(!is.na(obj_resp), !is.na(subj_resp)) %>%
+  count(obj_resp, subj_resp, name = "n") %>%
   mutate(pct_total = 100 * n / sum(n))
+
 
 tab_2x2_sens
 readr::write_csv(tab_2x2_sens, "outputs/task1/responder_2x2_sens.csv")
@@ -848,14 +851,19 @@ The dashed lines indicate the same clinical thresholds used in the main analysis
 c1_change_sens <- c1_change_sens %>%
   mutate(
     quadrant = case_when(
-      obj_resp == 1L & subj_resp == 1L ~ "Concordant responders",
-      obj_resp == 1L & subj_resp == 0L ~ "Discordant (obj yes, subj no)",
-      obj_resp == 0L & subj_resp == 1L ~ "Discordant (obj no, subj yes)",
-      TRUE ~ "Concordant non-responders"
-    ),
+  is.na(obj_resp) | is.na(subj_resp) ~ "Missing responder status",
+  obj_resp == 1L & subj_resp == 1L ~ "Concordant responders",
+  obj_resp == 1L & subj_resp == 0L ~ "Discordant (obj yes, subj no)",
+  obj_resp == 0L & subj_resp == 1L ~ "Discordant (obj no, subj yes)",
+  TRUE ~ "Concordant non-responders"
+)
+,
     #primary discordance of interest: objective yes, subjective no
-    discordant_primary = if_else(obj_resp == 1L & subj_resp == 0L, 1L, 0L)
-  )
+    discordant_primary = if_else(
+  !is.na(obj_resp) & !is.na(subj_resp) & obj_resp == 1L & subj_resp == 0L,
+  1L, 0L
+)
+)
 
 p_scatter_sens <- ggplot(c1_change_sens, aes(x = pct_change_MMDs, y = delta_HIT6)) +
   geom_vline(xintercept = -0.50, linetype = "dashed") +
@@ -870,6 +878,12 @@ p_scatter_sens <- ggplot(c1_change_sens, aes(x = pct_change_MMDs, y = delta_HIT6
 
 p_scatter_sens
 ggsave("outputs/task1/figures/scatter_mmds_pct_vs_hit6_delta_sens.png", p_scatter_sens, width = 7, height = 5)
+
+# ---- Micro-check  (SENS) ----
+table(c1_change_sens$obj_resp, useNA = "ifany")
+table(c1_change_sens$subj_resp, useNA = "ifany")
+table(c1_change_sens$discordance, useNA = "ifany")
+
 ```
 The scatter plot provides a direct confirmation that an objective-subjective mismatch persists under LOCF.
 In particular, patients in the "objective responder / subjective non-responder" quadrant represent the primary discordant profile of interest, supporting that the mismatch is not an artefact of the interpolation strategy.

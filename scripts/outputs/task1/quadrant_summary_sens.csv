@@ -1,5 +1,6 @@
 quadrant,n,pct
 Concordant responders,75,41.899441340782126
-Concordant non-responders,63,35.19553072625698
+Missing responder status,39,21.787709497206706
 "Discordant (obj no, subj yes)",34,18.99441340782123
+Concordant non-responders,24,13.40782122905028
 "Discordant (obj yes, subj no)",7,3.910614525139665
