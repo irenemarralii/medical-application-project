@@ -232,7 +232,7 @@ readr::write_csv(profile_counts, "outputs/task2/profile4_counts.csv")
 These four response profiles are reported to provide a clinically intuitive overview of response patterns. We then evaluated data completeness after baseline merging to determine which covariates could be reliably included in regression models without excessive loss of sample size.
 
 **Baseline heatmap across the 4 response profiles**
-To descriptively compare baseline characteristics across the four objective-subjective response profiles, we visualized standardized baseline variables (z-scores) in a heatmap. This provides an intuitive "baseline fingerprint" of each profile bfore any regression modeling.
+To descriptively compare baseline characteristics across the four objective-subjective response profiles, we visualized standardized baseline variables (z-scores) in a heatmap. This provides an intuitive "baseline fingerprint" of each profile before any regression modeling.
 
 ```{r task2-step22b-heatmap-wow, message=FALSE, warning=FALSE}
 library(dplyr)
@@ -365,32 +365,44 @@ The main analyses therefore focused on baseline covariates with complete data co
 No additional multivariate imputation was performed at this stage, as baseline imputation had already been addressed during preprocessing (Task 1), and the present step aimed only to assess residual missingness after data integration.
 
 **Love plot of missing values**
-```{r}
-# ------------------------------------------------------------
-# Missingness overview (visual) — save figure
-# ------------------------------------------------------------
-
+```{r task2-step22c-missingness-loveplot-baselineonly, message=FALSE, warning=FALSE}
 library(dplyr)
 library(ggplot2)
+library(stringr)
+
+# ------------------------------------------------------------
+# Missingness overview (baseline-only)
+# Goal: visualize missingness ONLY for baseline predictors,
+# excluding outcome/derived variables coming from Task 1/Task 2.
+# ------------------------------------------------------------
+
+# Variables that are NOT baseline predictors (derived/outcomes/ids)
+exclude_vars <- c(
+  "SUBJECT_ID",
+  "obj_resp", "subj_resp", "discordance", "concordant",
+  "unhappy_responder", "happy_nonresponder", "profile_4",
+  "delta_HIT6", "HIT6_end", "HIT6_start"
+)
 
 miss_plot_df <- na_postmerge %>%
   filter(pct_na > 0) %>%
+  filter(!variable %in% exclude_vars) %>%
+  # optional: drop any leftovers that clearly aren't baseline
+  filter(!str_detect(variable, "^HIT6_")) %>%
   arrange(desc(pct_na)) %>%
   mutate(variable = factor(variable, levels = variable))
 
 p_missing <- ggplot(miss_plot_df, aes(x = pct_na, y = variable)) +
   geom_segment(
     aes(x = 0, xend = pct_na, yend = variable),
-    linewidth = 0.9,
-    color = "grey70"
+    linewidth = 1.0,
+    color = "grey75"
   ) +
-  geom_point(
-    size = 3,
-    color = "#2b6cb0"
-  ) +
+  geom_point(size = 3.2, color = "#2b6cb0") +
+  scale_x_continuous(limits = c(0, 100), breaks = c(0, 25, 50, 75, 100)) +
   labs(
     title = "Baseline missingness after data integration",
-    subtitle = "Percentage of missing values per variable (Cycle 1)",
+    subtitle = "Percentage of missing values per baseline variable (Cycle 1)",
     x = "Missingness (%)",
     y = NULL
   ) +
@@ -405,17 +417,17 @@ p_missing <- ggplot(miss_plot_df, aes(x = pct_na, y = variable)) +
 p_missing
 
 ggsave(
-  filename = "outputs/task2/figures/missingness_loveplot.png",
+  filename = "outputs/task2/figures/missingness_loveplot_baseline.png",
   plot = p_missing,
-  width = 7.5,
-  height = 4.8,
+  width = 8.2,
+  height = 6.0,
   dpi = 300
 )
 
 ```
-The missingness profile highlights substantial heterogeneity in baseline data availability after dataset integration. While core demographic and baseline severity variables (AGE; GGCEF_T0, INT_T0) show minimal missingness, several clinical and comorbidity-related variables exhibit high proprotions of missing values (>50%).
+The missingness profile highlights substantial heterogeneity in baseline data availability after dataset integration. While core demographic and baseline severity variables (AGE; GGCEF_T0, INT_T0) show minimal missingness, several clinical and comorbidity-related variables exhibit high proportions of missing values (>50%).
 
-To avoid excessive losso of samples size and unstable model estimates, subsequent analyses were restricted to predictors with near-complete data coverage. This informed the selection of candidate predictors and supports the use of parimonious, univariable models given the limited number of outcome events.
+To avoid excessive loss of samples size and unstable model estimates, subsequent analyses were restricted to predictors with near-complete data coverage. This informed the selection of candidate predictors and supports the use of parsimonoius, univariable models given the limited number of outcome events.
 
 **Selection of candidate predictors**
 Based on data availability and clinical relevance, candidate baseline predictors for the logistic regression models were restricted to variables with complete or near-complete data coverage, including demographic characteristics, baseline migraine severity, and selected psychosocial measures.
