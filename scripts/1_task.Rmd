@@ -29,10 +29,6 @@ if (requireNamespace("rstudioapi", quietly = TRUE) && rstudioapi::isAvailable())
 }
 cat("WD:", getwd(), "\n")
 
-
-# Load baseline (clean + imputed version saved in preprocessing step)
-baseline_imp <- readRDS("data/processed/baseline_imputed.rds")
-
 # Load analysis datasets created in 02.preprocessing_missing_imputation.Rmd 
 data_main <- readRDS("data/processed/data_main_analysis.rds")
 data_sens <- readRDS("data/processed/data_sens_analysis.rds")
@@ -85,7 +81,6 @@ data_task1_sens <- data_sens %>%
   dplyr::mutate(
     SUBJECT_ID = factor(SUBJECT_ID),
     CYCLE = factor(CYCLE),
-    # Keep month as an ordered factor (1, 3, 6, 9, 12)
     MONTH_num = as.numeric(as.character(MONTH)),
     MONTH = factor(as.character(MONTH),
                    levels = c("1", "3", "6", "9", "12"),
@@ -317,16 +312,13 @@ cat("Patients with start-of-cycle data:", nrow(c1_start), "\n")
 
 c1_end <- c1 %>%
   group_by(SUBJECT_ID) %>%
-  filter(!all(is.na(month_num))) %>%
+  filter(!is.na(month_num)) %>%
+  filter(!(is.na(MMDs) & is.na(HIT6))) %>%  # <-- aggiungi questa riga
   filter(month_num == max(month_num, na.rm = TRUE)) %>%
   slice_tail(n = 1) %>%
   ungroup() %>%
-  select(
-    SUBJECT_ID,
-    end_month = month_num,
-    MMDs_end = MMDs,
-    HIT6_end = HIT6
-  )
+  select(SUBJECT_ID, end_month = month_num, MMDs_end = MMDs, HIT6_end = HIT6)
+
 
 cat("Patients with end-of-cycle data:", nrow(c1_end), "\n")
 cat("End month distribution:\n")
@@ -459,10 +451,10 @@ table(c1_change$discordance, useNA = "ifany")
 Using these clinically grounded definitions, we classified each patient at the end of Cycle 1 as an objective responder, a subjective responder, both, or neither.
 
 This classification allows us to explicitly distinguish between:
--**concordant responder**, who show both a clinically meaningful reduction in Monthly Migraine Days and a relevant improvement in patient-reported impact (HIT-6);
--**discordant responders**, who achieve a substantial objective improvement (≥50% reduction in MMDs) without a corresponding subjective benefit.
+- **concordant responders**, who show both a clinically meaningful reduction in Monthly Migraine Days and a relevant improvement in patient-reported impact (HIT-6);
+- **discordant responders**, who achieve a substantial objective improvement (≥50% reduction in MMDs) without a corresponding subjective benefit.
 
-The resulting dataset('c1_change) contains one row per subject with Cycle 1 start/end measurements, response indicators and a binary discordance label.
+The resulting dataset (c1_change) contains one row per subject with Cycle 1 start/end measurements, response indicators and a binary discordance label.
 This dataset represents the core input for downstream analyses aimed at  characterizing discordant patients and identifying baseline or longitudinal factors associated with objective-subjective mismatch (Task 2).
 
 ===============================================================================
@@ -473,25 +465,26 @@ This table cross-classifies patients according to objective response (based on M
 
 ```{r task1-mismatch-2x2, message=FALSE, warning=FALSE}
 # ------------------------------------------------------------------
-#  2x2 responder table (Objective vs Subjective)
+#  2x2 responder table (Objective vs Subjective) - MAIN
 # ------------------------------------------------------------------
 
 dir.create("outputs/task1", recursive = TRUE, showWarnings = FALSE)
-tab_2x2 <- c1_change %>%
-  filter(!is.na(obj_resp), !is.na(subj_resp)) %>%   # <-- fondamentale
-  count(obj_resp, subj_resp, name = "n") %>%
+
+# 1) Main table (complete-case only): used for primary mismatch quantification
+tab_2x2_main <- c1_change %>%
+  filter(!is.na(obj_resp), !is.na(subj_resp)) %>%
+  mutate(
+    obj_resp_lbl  = if_else(obj_resp == 1L, "Objective responder", "Objective non-responder"),
+    subj_resp_lbl = if_else(subj_resp == 1L, "Subjective responder", "Subjective non-responder")
+  ) %>%
+  count(obj_resp_lbl, subj_resp_lbl, name = "n") %>%
   mutate(pct_total = 100 * n / sum(n))
 
+tab_2x2_main
+readr::write_csv(tab_2x2_main, "outputs/task1/responder_2x2_main_complete_cases.csv")
 
-# Print table
-tab_2x2
-
-# Save table for reporting
-readr::write_csv(tab_2x2, "outputs/task1/responder_2x2_main.csv")
-
-
-#Labeled table
-tab_2x2_labeled <- c1_change %>%
+# 2) Extended table (includes missing labels): optional reporting / QC
+tab_2x2_extended <- c1_change %>%
   mutate(
     obj_resp_lbl = case_when(
       is.na(obj_resp) ~ "Objective missing",
@@ -507,8 +500,8 @@ tab_2x2_labeled <- c1_change %>%
   count(obj_resp_lbl, subj_resp_lbl, name = "n") %>%
   mutate(pct_total = 100 * n / sum(n))
 
-tab_2x2_labeled
-readr::write_csv(tab_2x2_labeled,"outputs/task1/responder_2x2_labeled_main.csv")
+tab_2x2_extended
+readr::write_csv(tab_2x2_extended, "outputs/task1/responder_2x2_main_including_missing.csv")
 ```
 
 The 2x2 table provides a direct quantification of agreement between objective and subjective response definitions.
@@ -533,25 +526,59 @@ Each point represents one patient, with the x-axis showing the percentage change
 # - Objective responder: pct_change_MMDs <= -0.50
 # - Subjective responder: delta_HIT6 <= -5
 
- 
-# Scatter plot
-c1_change_plot <- c1_change %>%
-  filter(!is.na(pct_change_MMDs),
-         !is.na(delta_HIT6),
-         !is.na(discordance))
+# Define levels and colors
+quad_levels <- c(
+  "Concordant responders",
+  "Discordant (obj yes, subj no)",
+  "Discordant (obj no, subj yes)",
+  "Concordant non-responders",
+  "Missing responder status"
+)
 
+quad_cols <- c(
+  "Concordant responders"         = "#F8766D",
+  "Discordant (obj yes, subj no)" = "#B79F00",
+  "Discordant (obj no, subj yes)" = "#00BA38",
+  "Concordant non-responders"     = "#00BFC4",
+  "Missing responder status"      = "#C77CFF"
+)
+
+# Ensure quadrant labels 
+c1_change_plot <- c1_change %>%
+  mutate(
+    quadrant = case_when(
+      is.na(obj_resp) | is.na(subj_resp) ~ "Missing responder status",
+      obj_resp == 1L & subj_resp == 1L ~ "Concordant responders",
+      obj_resp == 1L & subj_resp == 0L ~ "Discordant (obj yes, subj no)",
+      obj_resp == 0L & subj_resp == 1L ~ "Discordant (obj no, subj yes)",
+      TRUE ~ "Concordant non-responders"
+    ),
+    # primary discordance of interest: objective yes, subjective no
+    discordant_primary = if_else(
+      !is.na(obj_resp) & !is.na(subj_resp) & obj_resp == 1L & subj_resp == 0L,
+      1L, 0L
+    ),
+    quadrant = factor(quadrant, levels = quad_levels)
+  ) %>%
+  filter(!is.na(pct_change_MMDs), !is.na(delta_HIT6))
+
+# Scatter plot
 p_scatter <- ggplot(c1_change_plot, aes(x = pct_change_MMDs, y = delta_HIT6)) +
   geom_vline(xintercept = -0.50, linetype = "dashed") +
   geom_hline(yintercept = -5, linetype = "dashed") +
-  geom_point(aes(color = quadrant), alpha = 0.85, size = 2) +
-  geom_point(aes(color = quadrant, shape = factor(discordance)), alpha = 0.85, size = 2) +
+  geom_point(
+    aes(color = quadrant, shape = factor(discordant_primary)),
+    alpha = 0.85, size = 2
+  ) +
+  scale_color_manual(values = quad_cols, drop = FALSE) +
   labs(
-    title = "Objective vs Subjective Change (Cycle 1)",
+    title = "Objective vs Subjective Change (Cycle 1, MAIN)",
     x = "MMDs % change (end vs start)",
     y = "HIT-6 change (end - start)",
-   color = "Response profile",
-   shape = "Primary discordance"
+    color = "Response profile",
+    shape = "Primary discordance (1 = obj yes, subj no)"
   ) +
+  theme_minimal() +
   theme(legend.position = "right")
 
 p_scatter
@@ -572,18 +599,95 @@ This provides an immediate quantitative breakdown of mismatch patterns at the en
 # Example counts per quadrant (quick summary)
 # ------------------------------------------------------------------
 
-quad_summary <- c1_change %>%
+quad_summary <- c1_change_plot %>%
   count(quadrant, name = "n") %>%
-  mutate(pct = 100* n / sum(n)) %>%
-  arrange(desc(n))
+  mutate(pct = 100 * n / sum(n))
+
 
 quad_summary
 readr::write_csv(quad_summary, "outputs/task1/quadrant_summary_main.csv")
-```
-The quadrant summary quantifies how patients are distributed across concordant and discordant profiles, complementing the visual scatter plot with exact counts and percentages.
 
-In particular, the *discordant (obj yes, subj no)* group directly captures the primary mismatch of interest: patients achieving a substantial reduction in migraine frequency without reporting a clinically meaningful improvement in HIT-6.
+# ------------------------------------------------------------------
+# Bar plot: distribution of response quadrants (Cycle 1, MAIN)
+# ------------------------------------------------------------------
+p_quad_bar <- ggplot(quad_summary,
+                     aes(x = quadrant, y = pct, fill = quadrant)) +
+  geom_col(width = 0.7) +
+  scale_fill_manual(values = quad_cols, drop = FALSE) +
+  scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 18)) +
+  labs(
+    title = "Distribution of response profiles (Cycle 1, MAIN)",
+    x = "Response profile",
+    y = "Percentage of patients"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    axis.text.x = element_text(angle = 30, hjust = 1)
+  )
+
+p_quad_bar
+
+ggsave("outputs/task1/figures/quadrant_barplot_main.png",
+       p_quad_bar, width = 7, height = 4)
+```
+The quadrant summary and the associated bar plot quantify how patients are distributed across the four response profiles at the end of Cycle 1. The bar plot provides an immediate visual comparisom of the relative prevalence of concordant and discordant profiles, while the accompanying table reports the exact counts and percentages used to construct the figure. 
+
+In particular, the *discordant (obj yes, subj no)* group directly captures the primary mismatch of interest: patients achieving a substantial reduction in Monthly Migraine Days without reporting a clinically meaningful improvement in HIT-6.
+
 Conversely, the *discordant (obj no, subj yes)* group highlights the opposite pattern, i.e., subjective improvement without meeting the objective responder criterion.
+
+To further characterise the mismatch beyond quadrant membership, we summarise the distribution of the two change metrics within each response profile. These distribution plots show the median, variability and outliers of (i) HIT-6 change and (ii) MMDs percentage change, providing a compact view of how strongly patients improve within each quadrant rather than only whether they cross the clinical thresholds.
+```{r task1-mismatch-distributions-main, message=FALSE, warning=FALSE}
+# ------------------------------------------------------------------
+# Distribution plots (MAIN): how changes differ across quadrants
+# ------------------------------------------------------------------
+
+# Ensure same ordering
+c1_change_plot <- c1_change_plot %>%
+  mutate(quadrant = factor(quadrant, levels = quad_levels))
+
+# Boxplot: HIT-6 change by quadrant
+p_box_hit6 <- ggplot(c1_change_plot, aes(x = quadrant, y = delta_HIT6, fill = quadrant)) +
+  geom_boxplot(outlier.alpha = 0.25) +
+  scale_fill_manual(values = quad_cols, drop = FALSE) +
+  scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 18)) +
+  labs(
+    title = "Distribution of HIT-6 change by response profile (Cycle 1, MAIN)",
+    x = "Response profile",
+    y = "HIT-6 change (end - start)"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    axis.text.x = element_text(angle = 30, hjust = 1)
+  )
+
+# Boxplot: MMDs % change by quadrant
+p_box_mmds <- ggplot(c1_change_plot, aes(x = quadrant, y = pct_change_MMDs, fill = quadrant)) +
+  geom_boxplot(outlier.alpha = 0.25) +
+  scale_fill_manual(values = quad_cols, drop = FALSE) +
+  scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 18)) +
+  labs(
+    title = "Distribution of MMDs % change by response profile (Cycle 1, MAIN)",
+    x = "Response profile",
+    y = "MMDs % change (end vs start)"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    axis.text.x = element_text(angle = 30, hjust = 1)
+  )
+
+p_box_hit6
+p_box_mmds
+
+ggsave("outputs/task1/figures/box_hit6_by_quadrant_main.png", p_box_hit6, width = 7, height = 4)
+ggsave("outputs/task1/figures/box_mmds_by_quadrant_main.png", p_box_mmds, width = 7, height = 4)
+
+```
+The distributions align with the responder definitions: concordant responders concentrate in the improvement range for both metrics, while the primary discordant group shows large reductions in MMDs without a corresponding HIT-6 improvement. We next assess whether these patterns are robust to the missing-data strategy by repeating the same workflow under LOCF (SENS dataset).
+Notably, the primary discordant profile shows a clear separation in MMDs change but overlaps with non-responders in HIT-6 change.
 
 ===============================================================================
 ===============================================================================
@@ -770,7 +874,8 @@ c1_start_sens <- c1_sens %>%
 # End of cycle (Month 12 or last observed)
 c1_end_sens <- c1_sens %>%
   group_by(SUBJECT_ID) %>%
-  filter(!all(is.na(month_num))) %>%     # <- guard anti -Inf
+  filter(!is.na(month_num)) %>%
+  filter(!(is.na(MMDs) & is.na(HIT6))) %>%
   filter(month_num == max(month_num, na.rm = TRUE)) %>%
   slice_tail(n = 1) %>%
   ungroup() %>%
@@ -780,7 +885,6 @@ c1_end_sens <- c1_sens %>%
     MMDs_end = MMDs,
     HIT6_end = HIT6
   )
-
 
 cat("End month distribution (SENS):\n")
 print(table(c1_end_sens$end_month, useNA = "ifany"))
@@ -857,36 +961,67 @@ The dashed lines indicate the same clinical thresholds used in the main analysis
 # ------------------------------------------------------------------
 # Scatter plot: pct_change_MMDs vs delta_HIT6 (SENS)
 # ------------------------------------------------------------------
+# Keep the same quadrant order as in MAIN
 
+quad_levels <- c(
+  "Concordant responders",
+  "Discordant (obj yes, subj no)",
+  "Discordant (obj no, subj yes)",
+  "Concordant non-responders",
+  "Missing responder status"
+)
+
+# Define stable colors
+quad_cols <- c(
+  "Concordant responders"       = "#F8766D",
+  "Discordant (obj yes, subj no)" = "#B79F00",
+  "Discordant (obj no, subj yes)" = "#00BA38",
+  "Concordant non-responders"   = "#00BFC4",
+  "Missing responder status"    = "#C77CFF"
+)
+
+# Create quadrant
 c1_change_sens <- c1_change_sens %>%
   mutate(
     quadrant = case_when(
-  is.na(obj_resp) | is.na(subj_resp) ~ "Missing responder status",
-  obj_resp == 1L & subj_resp == 1L ~ "Concordant responders",
-  obj_resp == 1L & subj_resp == 0L ~ "Discordant (obj yes, subj no)",
-  obj_resp == 0L & subj_resp == 1L ~ "Discordant (obj no, subj yes)",
-  TRUE ~ "Concordant non-responders"
-)
-,
-    #primary discordance of interest: objective yes, subjective no
+      is.na(obj_resp) | is.na(subj_resp) ~ "Missing responder status",
+      obj_resp == 1L & subj_resp == 1L ~ "Concordant responders",
+      obj_resp == 1L & subj_resp == 0L ~ "Discordant (obj yes, subj no)",
+      obj_resp == 0L & subj_resp == 1L ~ "Discordant (obj no, subj yes)",
+      TRUE ~ "Concordant non-responders"
+    ),
     discordant_primary = if_else(
-  !is.na(obj_resp) & !is.na(subj_resp) & obj_resp == 1L & subj_resp == 0L,
-  1L, 0L
-)
-)
+      !is.na(obj_resp) & !is.na(subj_resp) & obj_resp == 1L & subj_resp == 0L,
+      1L, 0L
+    ),
+    # <-- THIS is the key line: enforce same ordering/levels as MAIN
+    quadrant = factor(quadrant, levels = quad_levels)
+  )
 
-p_scatter_sens <- ggplot(c1_change_sens, aes(x = pct_change_MMDs, y = delta_HIT6)) +
+c1_change_sens_plot <- c1_change_sens %>%
+  filter(!is.na(pct_change_MMDs), !is.na(delta_HIT6))
+
+# Plot
+p_scatter_sens <- ggplot(c1_change_sens_plot, aes(x = pct_change_MMDs, y = delta_HIT6)) +
   geom_vline(xintercept = -0.50, linetype = "dashed") +
   geom_hline(yintercept = -5, linetype = "dashed") +
-  geom_point(aes(shape = factor(discordant_primary)), alpha = 0.85) +
+  geom_point(aes(color = quadrant, shape = factor(discordant_primary)),
+             alpha = 0.85, size = 2) +
+  scale_color_manual(values = quad_cols, drop = FALSE) +
   labs(
     title = "Objective vs Subjective Change (Cycle 1, SENS)",
     x = "MMDs % change (end vs start)",
     y = "HIT-6 change (end - start)",
-    shape = "Discordance (1 = obj yes, subj no)"
-  )
+    color = "Response profile",
+    shape = "Primary discordance (1 = obj yes, subj no)"
+  ) +
+  theme_minimal()
+
+
+
 
 p_scatter_sens
+
 ggsave("outputs/task1/figures/scatter_mmds_pct_vs_hit6_delta_sens.png", p_scatter_sens, width = 7, height = 5)
 
 # ---- Micro-check  (SENS) ----
@@ -895,8 +1030,8 @@ table(c1_change_sens$subj_resp, useNA = "ifany")
 table(c1_change_sens$discordance, useNA = "ifany")
 
 ```
-The scatter plot provides a direct confirmation that an objective-subjective mismatch persists under LOCF.
-In particular, patients in the "objective responder / subjective non-responder" quadrant represent the primary discordant profile of interest, supporting that the mismatch is not an artefact of the interpolation strategy.
+The scatter plot confirms that the objective–subjective mismatch persists under LOCF. Patients in the region with pct_change_MMDs ≤ −0.50 but delta_HIT6 > −5 represent the primary discordant profile (objective responders without clinically meaningful HIT-6 improvement). Using the same clinical thresholds as in the main analysis allows a direct visual comparison across imputation strategies.
+
 
 To complement the scatter plot, we summarise the number and percentage of patients falling into each response quadrant under the SENS strategy.
 This provides an exact breakdown of concordant vs discordant profiles and facilitates direct comparison with the main analysis.
@@ -904,17 +1039,80 @@ This provides an exact breakdown of concordant vs discordant profiles and facili
 # ------------------------------------------------------------------
 # Quadrant summary (SENS)
 # ------------------------------------------------------------------
+quad_summary_sens <- c1_change_sens_plot %>%
+  count(quadrant, name="n") %>%
+  mutate(pct = 100*n/sum(n))
 
-quad_summary_sens <- c1_change_sens %>%
-  count(quadrant, name = "n") %>%
-  mutate(pct = 100 * n / sum(n)) %>%
-  arrange(desc(n))
 
 quad_summary_sens
 readr::write_csv(quad_summary_sens, "outputs/task1/quadrant_summary_sens.csv")
+
 ```
 The quadrant summary confirms the relative prevalence of each response profile under LOCF and allows us to compare discordance rates across missing-data strategies.
 Consistency in the distribution of profiles supports the robustness of the main mismatch finding.
+
+To provide an immediate robustness check, we directly compare the distribution of Cycle 1 response profiles between the main analysis (interpolation) and the sensitivity analysis (LOCF). The stacked bar plot shows the proportion of patients in each quadrant for the two datasets, allowing a visual assessment of whether discordant profiles (especially the primary discordance: objective yes, subjective no) remain stable across missing-data strategies.
+
+```{r}
+# ------------------------------------------------------------------
+# Stacked bar plot: quadrant distribution MAIN vs SENS (proportions)
+# ------------------------------------------------------------------
+quad_summary_main <- c1_change %>%
+  count(quadrant, name = "n") %>%
+  mutate(pct = 100 * n / sum(n))
+
+quad_summary_sens <- c1_change_sens %>%
+  count(quadrant, name = "n") %>%
+  mutate(pct = 100 * n / sum(n))
+
+
+# Create a combined summary table (counts + proportions)
+quad_compare <- dplyr::bind_rows(
+  quad_summary %>% dplyr::mutate(dataset = "MAIN (interpolation)"),
+  quad_summary_sens %>% dplyr::mutate(dataset = "SENS (LOCF)")
+) %>%
+  dplyr::group_by(dataset) %>%
+  dplyr::mutate(prop = n / sum(n)) %>%  # proportion within dataset
+  dplyr::ungroup()
+
+# (Optional but recommended) Fix order of quadrant labels in the plot
+quad_levels <- c(
+  "Concordant responders",
+  "Discordant (obj yes, subj no)",
+  "Discordant (obj no, subj yes)",
+  "Concordant non-responders",
+  "Missing responder status"
+)
+quad_compare <- quad_compare %>%
+  dplyr::mutate(
+    quadrant = factor(quadrant, levels = quad_levels)
+  )
+
+p_quad_stacked <- ggplot(quad_compare, aes(x = dataset, y = prop, fill = quadrant)) +
+  geom_col(width = 0.7, position = "fill") +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
+  labs(
+    title = "Response profile distribution: MAIN vs SENS (Cycle 1)",
+    x = "",
+    y = "Percentage of patients",
+    fill = "Response profile"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "right"
+  )
+
+p_quad_stacked
+
+# Save data used for the plot
+readr::write_csv(quad_compare, "outputs/task1/quadrant_compare_main_vs_sens.csv")
+
+ggsave("outputs/task1/figures/quadrant_stacked_main_vs_sens.png",
+       p_quad_stacked, width = 7, height = 4)
+
+```
+The profile proportions are broadly consistent across MAIN and SENS, suggesting that the observed objective–subjective mismatch is not driven by the imputation strategy.
+
 
 Finally, we directly compare the main and sensitivity analyses by:
 - reporting discordance prevalence under each strategy;  
@@ -969,7 +1167,7 @@ compare_fx_key
 readr::write_csv(compare_fx, "outputs/task1/compare_main_vs_sens_fixed_effects_sign.csv")
 readr::write_csv(compare_fx_key, "outputs/task1/compare_main_vs_sens_fixed_effects_sign_keyterms.csv")
 ```
-Fixed-effect directions for the main drivers (cycle contrasts and the numeric follow-up time effect, MONTH_num) were consistent between MAIN and SENS, indicating that the qualitative association of follow-up time and treatment cycle with both outcomes is not sensitive for the imputation strategy.
+Fixed-effect directions for the main drivers (cycle contrasts and the numeric follow-up time effect, MONTH_num) were consistent between MAIN and SENS, indicating that the qualitative association of follow-up time and treatment cycle with both outcomes is not sensitive to the imputation strategy.
 
 Results under  LOCF are qualitatively consistent with the main (interpolation-based) analysis, with similar direction of month/cycle effects and comparable discordance prevalence.
 

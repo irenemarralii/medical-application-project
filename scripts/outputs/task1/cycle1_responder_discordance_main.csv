@@ -1,180 +1,180 @@
-SUBJECT_ID,MMDs_start,HIT6_start,end_month,MMDs_end,HIT6_end,pct_change_MMDs,delta_HIT6,quadrant,discordance,obj_resp,subj_resp,concordant
-1,13,63,12,1,0,-0.9230769230769231,-63,Concordant responders,0,1,1,1
-2,24,64,12,8,0,-0.6666666666666666,-64,Concordant responders,0,1,1,1
-3,25,70,12,6,0,-0.76,-70,Concordant responders,0,1,1,1
-4,24,64,12,0,0,-1,-64,Concordant responders,0,1,1,1
-5,16,59,12,7,0,-0.5625,-59,Concordant responders,0,1,1,1
-6,26,65,12,15,2,-0.4230769230769231,-63,"Discordant (obj no, subj yes)",0,0,1,0
-7,15,70,12,9,7,-0.4,-63,"Discordant (obj no, subj yes)",0,0,1,0
-8,15,66,12,7,4,-0.5333333333333333,-62,Concordant responders,0,1,1,1
-9,25,74,12,8,0,-0.68,-74,Concordant responders,0,1,1,1
-10,14,68,12,5,3,-0.6428571428571429,-65,Concordant responders,0,1,1,1
-11,23,64,12,2,1,-0.9130434782608695,-63,Concordant responders,0,1,1,1
-12,18,66,12,4,13,-0.7777777777777778,-53,Concordant responders,0,1,1,1
-13,26,71,12,15,16,-0.4230769230769231,-55,"Discordant (obj no, subj yes)",0,0,1,0
-14,26,67,12,3,6,-0.8846153846153846,-61,Concordant responders,0,1,1,1
-15,20,61,12,5,1,-0.75,-60,Concordant responders,0,1,1,1
-16,23,66,12,5,7,-0.782608695652174,-59,Concordant responders,0,1,1,1
-17,24,51,12,12,6,-0.5,-45,Concordant responders,0,1,1,1
-18,26,74,12,0,3,-1,-71,Concordant responders,0,1,1,1
-19,25,65,12,3,4,-0.88,-61,Concordant responders,0,1,1,1
-20,20,78,12,9,2,-0.55,-76,Concordant responders,0,1,1,1
-21,28,66,12,7,0,-0.75,-66,Concordant responders,0,1,1,1
-22,25,70,12,13,0,-0.48,-70,"Discordant (obj no, subj yes)",0,0,1,0
-23,25,67,12,0,0,-1,-67,Concordant responders,0,1,1,1
-24,15,66,12,4,1,-0.7333333333333333,-65,Concordant responders,0,1,1,1
-25,21,78,12,5,0,-0.7619047619047619,-78,Concordant responders,0,1,1,1
-26,10,68,12,4,7,-0.6,-61,Concordant responders,0,1,1,1
-27,22,72,12,9,13,-0.5909090909090909,-59,Concordant responders,0,1,1,1
-28,12,61,12,2,0,-0.8333333333333334,-61,Concordant responders,0,1,1,1
-29,30,68,12,10,0,-0.6666666666666666,-68,Concordant responders,0,1,1,1
-30,28,62,12,5,3,-0.8214285714285714,-59,Concordant responders,0,1,1,1
-31,20,64,12,7,2,-0.65,-62,Concordant responders,0,1,1,1
-32,28,74,12,10,1,-0.6428571428571429,-73,Concordant responders,0,1,1,1
-33,28,63,12,8,5,-0.7142857142857143,-58,Concordant responders,0,1,1,1
-34,26,76,12,15,8,-0.4230769230769231,-68,"Discordant (obj no, subj yes)",0,0,1,0
-35,28,72,12,9,0,-0.6785714285714286,-72,Concordant responders,0,1,1,1
-36,22,72,12,5,11,-0.7727272727272727,-61,Concordant responders,0,1,1,1
-37,30,76,12,11,61,-0.6333333333333333,-15,Concordant responders,0,1,1,1
-38,28,72,12,8,52,-0.7142857142857143,-20,Concordant responders,0,1,1,1
-39,24,78,12,10,65,-0.5833333333333334,-13,Concordant responders,0,1,1,1
-40,21,68,12,9,67,-0.5714285714285714,-1,"Discordant (obj yes, subj no)",1,1,0,0
-41,26,64,12,7,59,-0.7307692307692307,-5,Concordant responders,0,1,1,1
-42,30,66,12,19,63,-0.36666666666666664,-3,Concordant non-responders,0,0,0,0
-43,30,70,12,7,44,-0.7666666666666667,-26,Concordant responders,0,1,1,1
-44,25,66,12,11,65,-0.56,-1,"Discordant (obj yes, subj no)",1,1,0,0
-45,23,70,12,5,54,-0.782608695652174,-16,Concordant responders,0,1,1,1
-46,30,78,12,20,68,-0.3333333333333333,-10,"Discordant (obj no, subj yes)",0,0,1,0
-47,30,76,12,6,49,-0.8,-27,Concordant responders,0,1,1,1
-48,30,69,12,30,48,0,-21,"Discordant (obj no, subj yes)",0,0,1,0
-49,28,70,12,8,48,-0.7142857142857143,-22,Concordant responders,0,1,1,1
-50,27,71,12,3,38,-0.8888888888888888,-33,Concordant responders,0,1,1,1
-51,24,63,12,4,38,-0.8333333333333334,-25,Concordant responders,0,1,1,1
-52,17,61,12,3,40,-0.8235294117647058,-21,Concordant responders,0,1,1,1
-53,15,74,12,20,61,0.3333333333333333,-13,"Discordant (obj no, subj yes)",0,0,1,0
-54,20,68,12,4,61,-0.8,-7,Concordant responders,0,1,1,1
-55,30,70,12,10,24,-0.6666666666666666,-46,Concordant responders,0,1,1,1
-56,30,72,12,28,57,-0.06666666666666667,-15,"Discordant (obj no, subj yes)",0,0,1,0
-57,20,68,12,12,54,-0.4,-14,"Discordant (obj no, subj yes)",0,0,1,0
-58,30,64,12,16,56,-0.4666666666666667,-8,"Discordant (obj no, subj yes)",0,0,1,0
-59,30,70,12,2,48,-0.9333333333333333,-22,Concordant responders,0,1,1,1
-60,16,70,12,15,62,-0.0625,-8,"Discordant (obj no, subj yes)",0,0,1,0
-61,22,65,12,18,66,-0.18181818181818182,1,Concordant non-responders,0,0,0,0
-62,15,72,12,2,50,-0.8666666666666667,-22,Concordant responders,0,1,1,1
-63,20,72,12,12,48,-0.4,-24,"Discordant (obj no, subj yes)",0,0,1,0
-64,20,72,12,4,52,-0.8,-20,Concordant responders,0,1,1,1
-65,30,67,12,9,40,-0.7,-27,Concordant responders,0,1,1,1
-66,20,70,12,5,42,-0.75,-28,Concordant responders,0,1,1,1
-67,15,62,12,9,48,-0.4,-14,"Discordant (obj no, subj yes)",0,0,1,0
-68,15,70,12,3,50,-0.8,-20,Concordant responders,0,1,1,1
-69,30,74,12,22,63,-0.26666666666666666,-11,"Discordant (obj no, subj yes)",0,0,1,0
-70,15,70,12,6,50,-0.6,-20,Concordant responders,0,1,1,1
-71,28,74,12,0,50,-1,-24,Concordant responders,0,1,1,1
-72,15,73,12,10,60,-0.3333333333333333,-13,"Discordant (obj no, subj yes)",0,0,1,0
-73,25,55,12,5,0,-0.8,-55,Concordant responders,0,1,1,1
-74,18,64,12,7,0,-0.6111111111111112,-64,Concordant responders,0,1,1,1
-75,15,68,12,13,6,-0.13333333333333333,-62,"Discordant (obj no, subj yes)",0,0,1,0
-76,26,68,12,1,60,-0.9615384615384616,-8,Concordant responders,0,1,1,1
-77,16,70,12,7,42,-0.5625,-28,Concordant responders,0,1,1,1
-78,15,65,12,4,50,-0.7333333333333333,-15,Concordant responders,0,1,1,1
-79,28,NA,12,27,NA,-0.03571428571428571,NA,Missing responder status,NA,0,NA,NA
-80,27,NA,12,0,NA,-1,NA,Missing responder status,NA,1,NA,NA
-81,28,NA,12,10,NA,-0.6428571428571429,NA,Missing responder status,NA,1,NA,NA
-82,28,NA,12,2,NA,-0.9285714285714286,NA,Missing responder status,NA,1,NA,NA
-83,25,NA,12,NA,NA,NA,NA,Missing responder status,NA,NA,NA,NA
-84,15,NA,12,0,NA,-1,NA,Missing responder status,NA,1,NA,NA
-85,24,NA,12,NA,NA,NA,NA,Missing responder status,NA,NA,NA,NA
-86,26,NA,12,8,NA,-0.6923076923076923,NA,Missing responder status,NA,1,NA,NA
-87,24,NA,12,12,NA,-0.5,NA,Missing responder status,NA,1,NA,NA
-88,18,NA,12,1,NA,-0.9444444444444444,NA,Missing responder status,NA,1,NA,NA
-89,23,NA,12,14,NA,-0.391304347826087,NA,Missing responder status,NA,0,NA,NA
-90,26,NA,12,11,NA,-0.5769230769230769,NA,Missing responder status,NA,1,NA,NA
-91,27,NA,12,1,NA,-0.9629629629629629,NA,Missing responder status,NA,1,NA,NA
-92,28,NA,12,NA,NA,NA,NA,Missing responder status,NA,NA,NA,NA
-93,28,NA,12,NA,NA,NA,NA,Missing responder status,NA,NA,NA,NA
-94,16,NA,12,12,NA,-0.25,NA,Missing responder status,NA,0,NA,NA
-95,20,NA,12,12,NA,-0.4,NA,Missing responder status,NA,0,NA,NA
-96,24,NA,12,26,NA,0.08333333333333333,NA,Missing responder status,NA,0,NA,NA
-97,24,NA,12,10,NA,-0.5833333333333334,NA,Missing responder status,NA,1,NA,NA
-98,24,NA,12,16,NA,-0.3333333333333333,NA,Missing responder status,NA,0,NA,NA
-99,25,NA,12,14,NA,-0.44,NA,Missing responder status,NA,0,NA,NA
-100,25,NA,12,NA,NA,NA,NA,Missing responder status,NA,NA,NA,NA
-101,11,NA,12,5,NA,-0.5454545454545454,NA,Missing responder status,NA,1,NA,NA
-102,28,NA,12,28,NA,0,NA,Missing responder status,NA,0,NA,NA
-103,15,NA,12,7,NA,-0.5333333333333333,NA,Missing responder status,NA,1,NA,NA
-104,28,NA,12,28,NA,0,NA,Missing responder status,NA,0,NA,NA
-105,20,NA,12,16,NA,-0.2,NA,Missing responder status,NA,0,NA,NA
-106,15,NA,12,8,NA,-0.4666666666666667,NA,Missing responder status,NA,0,NA,NA
-107,28,NA,12,NA,NA,NA,NA,Missing responder status,NA,NA,NA,NA
-108,27,NA,12,15,NA,-0.4444444444444444,NA,Missing responder status,NA,0,NA,NA
-109,19,NA,12,13,NA,-0.3157894736842105,NA,Missing responder status,NA,0,NA,NA
-110,27,NA,12,0,NA,-1,NA,Missing responder status,NA,1,NA,NA
-111,27,NA,12,17,NA,-0.37037037037037035,NA,Missing responder status,NA,0,NA,NA
-112,24,NA,12,28,NA,0.16666666666666666,NA,Missing responder status,NA,0,NA,NA
-113,20,NA,12,9,NA,-0.55,NA,Missing responder status,NA,1,NA,NA
-114,27,NA,12,28,NA,0.037037037037037035,NA,Missing responder status,NA,0,NA,NA
-115,28,NA,12,NA,NA,NA,NA,Missing responder status,NA,NA,NA,NA
-116,28,NA,12,0,NA,-1,NA,Missing responder status,NA,1,NA,NA
-117,28,NA,12,25,NA,-0.10714285714285714,NA,Missing responder status,NA,0,NA,NA
-118,24,78,12,10,65,-0.5833333333333334,-13,Concordant responders,0,1,1,1
-119,20,66,12,NA,NA,NA,NA,Missing responder status,NA,NA,NA,NA
-120,20,60,12,14,41,-0.3,-19,"Discordant (obj no, subj yes)",0,0,1,0
-121,30,68,12,NA,NA,NA,NA,Missing responder status,NA,NA,NA,NA
-122,15,65,12,NA,NA,NA,NA,Missing responder status,NA,NA,NA,NA
-123,30,70,12,18,48,-0.4,-22,"Discordant (obj no, subj yes)",0,0,1,0
-124,25,62,12,NA,NA,NA,NA,Missing responder status,NA,NA,NA,NA
-125,28,74,12,10,46,-0.6428571428571429,-28,Concordant responders,0,1,1,1
-126,28,68,12,NA,NA,NA,NA,Missing responder status,NA,NA,NA,NA
-127,30,70,12,NA,NA,NA,NA,Missing responder status,NA,NA,NA,NA
-128,20,72,12,NA,NA,NA,NA,Missing responder status,NA,NA,NA,NA
-130,15,71,12,NA,NA,NA,NA,Missing responder status,NA,NA,NA,NA
-131,30,58,12,26,43,-0.13333333333333333,-15,"Discordant (obj no, subj yes)",0,0,1,0
-132,16,65,12,NA,NA,NA,NA,Missing responder status,NA,NA,NA,NA
-133,30,66,12,8,54,-0.7333333333333333,-12,Concordant responders,0,1,1,1
-134,10,56,12,NA,NA,NA,NA,Missing responder status,NA,NA,NA,NA
-135,30,74,12,8,61,-0.7333333333333333,-13,Concordant responders,0,1,1,1
-136,30,74,12,30,68,0,-6,"Discordant (obj no, subj yes)",0,0,1,0
-137,25,60,12,15,44,-0.4,-16,"Discordant (obj no, subj yes)",0,0,1,0
-138,20,67,12,1,40,-0.95,-27,Concordant responders,0,1,1,1
-139,25,74,12,10,51,-0.6,-23,Concordant responders,0,1,1,1
-140,20,68,12,NA,NA,NA,NA,Missing responder status,NA,NA,NA,NA
-141,12,65,12,2,48,-0.8333333333333334,-17,Concordant responders,0,1,1,1
-143,30,73,12,NA,NA,NA,NA,Missing responder status,NA,NA,NA,NA
-144,30,74,12,NA,NA,NA,NA,Missing responder status,NA,NA,NA,NA
-145,30,77,12,18,NA,-0.4,NA,Missing responder status,NA,0,NA,NA
-146,30,72,12,NA,NA,NA,NA,Missing responder status,NA,NA,NA,NA
-148,30,54,12,NA,NA,NA,NA,Missing responder status,NA,NA,NA,NA
-149,30,73,12,NA,NA,NA,NA,Missing responder status,NA,NA,NA,NA
-150,30,74,12,NA,NA,NA,NA,Missing responder status,NA,NA,NA,NA
-151,30,60,12,30,72,0,12,Concordant non-responders,0,0,0,0
-152,30,78,12,NA,NA,NA,NA,Missing responder status,NA,NA,NA,NA
-153,20,72,12,NA,NA,NA,NA,Missing responder status,NA,NA,NA,NA
-154,30,78,12,12,66,-0.6,-12,Concordant responders,0,1,1,1
-155,30,67,12,NA,NA,NA,NA,Missing responder status,NA,NA,NA,NA
-156,30,66,12,25,NA,-0.16666666666666666,NA,Missing responder status,NA,0,NA,NA
-157,30,70,12,NA,NA,NA,NA,Missing responder status,NA,NA,NA,NA
-158,30,71,12,NA,NA,NA,NA,Missing responder status,NA,NA,NA,NA
-160,28,71,12,NA,NA,NA,NA,Missing responder status,NA,NA,NA,NA
-161,20,66,12,NA,NA,NA,NA,Missing responder status,NA,NA,NA,NA
-162,15,70,12,NA,NA,NA,NA,Missing responder status,NA,NA,NA,NA
-163,20,66,12,3,52,-0.85,-14,Concordant responders,0,1,1,1
-164,17,47,12,23,46,0.35294117647058826,-1,Concordant non-responders,0,0,0,0
-165,8,72,12,NA,NA,NA,NA,Missing responder status,NA,NA,NA,NA
-166,30,72,12,18,54,-0.4,-18,"Discordant (obj no, subj yes)",0,0,1,0
-167,8,67,12,NA,NA,NA,NA,Missing responder status,NA,NA,NA,NA
-168,30,65,12,NA,NA,NA,NA,Missing responder status,NA,NA,NA,NA
-170,8,55,12,NA,NA,NA,NA,Missing responder status,NA,NA,NA,NA
-172,30,67,12,NA,NA,NA,NA,Missing responder status,NA,NA,NA,NA
-173,30,69,12,NA,NA,NA,NA,Missing responder status,NA,NA,NA,NA
-175,25,76,12,NA,NA,NA,NA,Missing responder status,NA,NA,NA,NA
-176,20,46,12,NA,NA,NA,NA,Missing responder status,NA,NA,NA,NA
-177,15,68,12,NA,NA,NA,NA,Missing responder status,NA,NA,NA,NA
-179,20,65,12,NA,NA,NA,NA,Missing responder status,NA,NA,NA,NA
-180,9,63,12,NA,NA,NA,NA,Missing responder status,NA,NA,NA,NA
-181,30,63,12,28,56,-0.06666666666666667,-7,"Discordant (obj no, subj yes)",0,0,1,0
-182,10,67,12,NA,NA,NA,NA,Missing responder status,NA,NA,NA,NA
-183,30,74,12,NA,NA,NA,NA,Missing responder status,NA,NA,NA,NA
-184,30,56,12,NA,NA,NA,NA,Missing responder status,NA,NA,NA,NA
-185,25,72,12,10,57,-0.6,-15,Concordant responders,0,1,1,1
-186,30,68,12,26,54,-0.13333333333333333,-14,"Discordant (obj no, subj yes)",0,0,1,0
-187,30,70,12,NA,NA,NA,NA,Missing responder status,NA,NA,NA,NA
+SUBJECT_ID,MMDs_start,HIT6_start,end_month,MMDs_end,HIT6_end,pct_change_MMDs,delta_HIT6,obj_resp,subj_resp,discordance,concordant,quadrant
+1,13,63,12,1,0,-0.9230769230769231,-63,1,1,0,1,Concordant responders
+2,24,64,12,8,0,-0.6666666666666666,-64,1,1,0,1,Concordant responders
+3,25,70,12,6,0,-0.76,-70,1,1,0,1,Concordant responders
+4,24,64,12,0,0,-1,-64,1,1,0,1,Concordant responders
+5,16,59,12,7,0,-0.5625,-59,1,1,0,1,Concordant responders
+6,26,65,12,15,2,-0.4230769230769231,-63,0,1,0,0,"Discordant (obj no, subj yes)"
+7,15,70,12,9,7,-0.4,-63,0,1,0,0,"Discordant (obj no, subj yes)"
+8,15,66,12,7,4,-0.5333333333333333,-62,1,1,0,1,Concordant responders
+9,25,74,12,8,0,-0.68,-74,1,1,0,1,Concordant responders
+10,14,68,12,5,3,-0.6428571428571429,-65,1,1,0,1,Concordant responders
+11,23,64,12,2,1,-0.9130434782608695,-63,1,1,0,1,Concordant responders
+12,18,66,12,4,13,-0.7777777777777778,-53,1,1,0,1,Concordant responders
+13,26,71,12,15,16,-0.4230769230769231,-55,0,1,0,0,"Discordant (obj no, subj yes)"
+14,26,67,12,3,6,-0.8846153846153846,-61,1,1,0,1,Concordant responders
+15,20,61,12,5,1,-0.75,-60,1,1,0,1,Concordant responders
+16,23,66,12,5,7,-0.782608695652174,-59,1,1,0,1,Concordant responders
+17,24,51,12,12,6,-0.5,-45,1,1,0,1,Concordant responders
+18,26,74,12,0,3,-1,-71,1,1,0,1,Concordant responders
+19,25,65,12,3,4,-0.88,-61,1,1,0,1,Concordant responders
+20,20,78,12,9,2,-0.55,-76,1,1,0,1,Concordant responders
+21,28,66,12,7,0,-0.75,-66,1,1,0,1,Concordant responders
+22,25,70,12,13,0,-0.48,-70,0,1,0,0,"Discordant (obj no, subj yes)"
+23,25,67,12,0,0,-1,-67,1,1,0,1,Concordant responders
+24,15,66,12,4,1,-0.7333333333333333,-65,1,1,0,1,Concordant responders
+25,21,78,12,5,0,-0.7619047619047619,-78,1,1,0,1,Concordant responders
+26,10,68,12,4,7,-0.6,-61,1,1,0,1,Concordant responders
+27,22,72,12,9,13,-0.5909090909090909,-59,1,1,0,1,Concordant responders
+28,12,61,12,2,0,-0.8333333333333334,-61,1,1,0,1,Concordant responders
+29,30,68,12,10,0,-0.6666666666666666,-68,1,1,0,1,Concordant responders
+30,28,62,12,5,3,-0.8214285714285714,-59,1,1,0,1,Concordant responders
+31,20,64,12,7,2,-0.65,-62,1,1,0,1,Concordant responders
+32,28,74,12,10,1,-0.6428571428571429,-73,1,1,0,1,Concordant responders
+33,28,63,12,8,5,-0.7142857142857143,-58,1,1,0,1,Concordant responders
+34,26,76,12,15,8,-0.4230769230769231,-68,0,1,0,0,"Discordant (obj no, subj yes)"
+35,28,72,12,9,0,-0.6785714285714286,-72,1,1,0,1,Concordant responders
+36,22,72,12,5,11,-0.7727272727272727,-61,1,1,0,1,Concordant responders
+37,30,76,12,11,61,-0.6333333333333333,-15,1,1,0,1,Concordant responders
+38,28,72,12,8,52,-0.7142857142857143,-20,1,1,0,1,Concordant responders
+39,24,78,12,10,65,-0.5833333333333334,-13,1,1,0,1,Concordant responders
+40,21,68,12,9,67,-0.5714285714285714,-1,1,0,1,0,"Discordant (obj yes, subj no)"
+41,26,64,12,7,59,-0.7307692307692307,-5,1,1,0,1,Concordant responders
+42,30,66,12,19,63,-0.36666666666666664,-3,0,0,0,0,Concordant non-responders
+43,30,70,12,7,44,-0.7666666666666667,-26,1,1,0,1,Concordant responders
+44,25,66,12,11,65,-0.56,-1,1,0,1,0,"Discordant (obj yes, subj no)"
+45,23,70,12,5,54,-0.782608695652174,-16,1,1,0,1,Concordant responders
+46,30,78,12,20,68,-0.3333333333333333,-10,0,1,0,0,"Discordant (obj no, subj yes)"
+47,30,76,12,6,49,-0.8,-27,1,1,0,1,Concordant responders
+48,30,69,12,30,48,0,-21,0,1,0,0,"Discordant (obj no, subj yes)"
+49,28,70,12,8,48,-0.7142857142857143,-22,1,1,0,1,Concordant responders
+50,27,71,12,3,38,-0.8888888888888888,-33,1,1,0,1,Concordant responders
+51,24,63,12,4,38,-0.8333333333333334,-25,1,1,0,1,Concordant responders
+52,17,61,12,3,40,-0.8235294117647058,-21,1,1,0,1,Concordant responders
+53,15,74,12,20,61,0.3333333333333333,-13,0,1,0,0,"Discordant (obj no, subj yes)"
+54,20,68,12,4,61,-0.8,-7,1,1,0,1,Concordant responders
+55,30,70,12,10,24,-0.6666666666666666,-46,1,1,0,1,Concordant responders
+56,30,72,12,28,57,-0.06666666666666667,-15,0,1,0,0,"Discordant (obj no, subj yes)"
+57,20,68,12,12,54,-0.4,-14,0,1,0,0,"Discordant (obj no, subj yes)"
+58,30,64,12,16,56,-0.4666666666666667,-8,0,1,0,0,"Discordant (obj no, subj yes)"
+59,30,70,12,2,48,-0.9333333333333333,-22,1,1,0,1,Concordant responders
+60,16,70,12,15,62,-0.0625,-8,0,1,0,0,"Discordant (obj no, subj yes)"
+61,22,65,12,18,66,-0.18181818181818182,1,0,0,0,0,Concordant non-responders
+62,15,72,12,2,50,-0.8666666666666667,-22,1,1,0,1,Concordant responders
+63,20,72,12,12,48,-0.4,-24,0,1,0,0,"Discordant (obj no, subj yes)"
+64,20,72,12,4,52,-0.8,-20,1,1,0,1,Concordant responders
+65,30,67,12,9,40,-0.7,-27,1,1,0,1,Concordant responders
+66,20,70,12,5,42,-0.75,-28,1,1,0,1,Concordant responders
+67,15,62,12,9,48,-0.4,-14,0,1,0,0,"Discordant (obj no, subj yes)"
+68,15,70,12,3,50,-0.8,-20,1,1,0,1,Concordant responders
+69,30,74,12,22,63,-0.26666666666666666,-11,0,1,0,0,"Discordant (obj no, subj yes)"
+70,15,70,12,6,50,-0.6,-20,1,1,0,1,Concordant responders
+71,28,74,12,0,50,-1,-24,1,1,0,1,Concordant responders
+72,15,73,12,10,60,-0.3333333333333333,-13,0,1,0,0,"Discordant (obj no, subj yes)"
+73,25,55,12,5,0,-0.8,-55,1,1,0,1,Concordant responders
+74,18,64,12,7,0,-0.6111111111111112,-64,1,1,0,1,Concordant responders
+75,15,68,12,13,6,-0.13333333333333333,-62,0,1,0,0,"Discordant (obj no, subj yes)"
+76,26,68,12,1,60,-0.9615384615384616,-8,1,1,0,1,Concordant responders
+77,16,70,12,7,42,-0.5625,-28,1,1,0,1,Concordant responders
+78,15,65,12,4,50,-0.7333333333333333,-15,1,1,0,1,Concordant responders
+79,28,NA,12,27,NA,-0.03571428571428571,NA,0,NA,NA,NA,Missing responder status
+80,27,NA,12,0,NA,-1,NA,1,NA,NA,NA,Missing responder status
+81,28,NA,12,10,NA,-0.6428571428571429,NA,1,NA,NA,NA,Missing responder status
+82,28,NA,12,2,NA,-0.9285714285714286,NA,1,NA,NA,NA,Missing responder status
+83,25,NA,9,27,NA,0.08,NA,0,NA,NA,NA,Missing responder status
+84,15,NA,12,0,NA,-1,NA,1,NA,NA,NA,Missing responder status
+85,24,NA,6,28,NA,0.16666666666666666,NA,0,NA,NA,NA,Missing responder status
+86,26,NA,12,8,NA,-0.6923076923076923,NA,1,NA,NA,NA,Missing responder status
+87,24,NA,12,12,NA,-0.5,NA,1,NA,NA,NA,Missing responder status
+88,18,NA,12,1,NA,-0.9444444444444444,NA,1,NA,NA,NA,Missing responder status
+89,23,NA,12,14,NA,-0.391304347826087,NA,0,NA,NA,NA,Missing responder status
+90,26,NA,12,11,NA,-0.5769230769230769,NA,1,NA,NA,NA,Missing responder status
+91,27,NA,12,1,NA,-0.9629629629629629,NA,1,NA,NA,NA,Missing responder status
+92,28,NA,3,27,NA,-0.03571428571428571,NA,0,NA,NA,NA,Missing responder status
+93,28,NA,9,28,NA,0,NA,0,NA,NA,NA,Missing responder status
+94,16,NA,12,12,NA,-0.25,NA,0,NA,NA,NA,Missing responder status
+95,20,NA,12,12,NA,-0.4,NA,0,NA,NA,NA,Missing responder status
+96,24,NA,12,26,NA,0.08333333333333333,NA,0,NA,NA,NA,Missing responder status
+97,24,NA,12,10,NA,-0.5833333333333334,NA,1,NA,NA,NA,Missing responder status
+98,24,NA,12,16,NA,-0.3333333333333333,NA,0,NA,NA,NA,Missing responder status
+99,25,NA,12,14,NA,-0.44,NA,0,NA,NA,NA,Missing responder status
+100,25,NA,6,15,NA,-0.4,NA,0,NA,NA,NA,Missing responder status
+101,11,NA,12,5,NA,-0.5454545454545454,NA,1,NA,NA,NA,Missing responder status
+102,28,NA,12,28,NA,0,NA,0,NA,NA,NA,Missing responder status
+103,15,NA,12,7,NA,-0.5333333333333333,NA,1,NA,NA,NA,Missing responder status
+104,28,NA,12,28,NA,0,NA,0,NA,NA,NA,Missing responder status
+105,20,NA,12,16,NA,-0.2,NA,0,NA,NA,NA,Missing responder status
+106,15,NA,12,8,NA,-0.4666666666666667,NA,0,NA,NA,NA,Missing responder status
+107,28,NA,3,3,NA,-0.8928571428571429,NA,1,NA,NA,NA,Missing responder status
+108,27,NA,12,15,NA,-0.4444444444444444,NA,0,NA,NA,NA,Missing responder status
+109,19,NA,12,13,NA,-0.3157894736842105,NA,0,NA,NA,NA,Missing responder status
+110,27,NA,12,0,NA,-1,NA,1,NA,NA,NA,Missing responder status
+111,27,NA,12,17,NA,-0.37037037037037035,NA,0,NA,NA,NA,Missing responder status
+112,24,NA,12,28,NA,0.16666666666666666,NA,0,NA,NA,NA,Missing responder status
+113,20,NA,12,9,NA,-0.55,NA,1,NA,NA,NA,Missing responder status
+114,27,NA,12,28,NA,0.037037037037037035,NA,0,NA,NA,NA,Missing responder status
+115,28,NA,6,28,NA,0,NA,0,NA,NA,NA,Missing responder status
+116,28,NA,12,0,NA,-1,NA,1,NA,NA,NA,Missing responder status
+117,28,NA,12,25,NA,-0.10714285714285714,NA,0,NA,NA,NA,Missing responder status
+118,24,78,12,10,65,-0.5833333333333334,-13,1,1,0,1,Concordant responders
+119,20,66,3,26,66,0.3,0,0,0,0,0,Concordant non-responders
+120,20,60,12,14,41,-0.3,-19,0,1,0,0,"Discordant (obj no, subj yes)"
+121,30,68,6,13,56,-0.5666666666666667,-12,1,1,0,1,Concordant responders
+122,15,65,6,20,64,0.3333333333333333,-1,0,0,0,0,Concordant non-responders
+123,30,70,12,18,48,-0.4,-22,0,1,0,0,"Discordant (obj no, subj yes)"
+124,25,62,6,22,55,-0.12,-7,0,1,0,0,"Discordant (obj no, subj yes)"
+125,28,74,12,10,46,-0.6428571428571429,-28,1,1,0,1,Concordant responders
+126,28,68,6,30,68,0.07142857142857142,0,0,0,0,0,Concordant non-responders
+127,30,70,9,28,66,-0.06666666666666667,-4,0,0,0,0,Concordant non-responders
+128,20,72,6,27,70,0.35,-2,0,0,0,0,Concordant non-responders
+130,15,71,6,16,66,0.06666666666666667,-5,0,1,0,0,"Discordant (obj no, subj yes)"
+131,30,58,12,26,43,-0.13333333333333333,-15,0,1,0,0,"Discordant (obj no, subj yes)"
+132,16,65,3,20,67,0.25,2,0,0,0,0,Concordant non-responders
+133,30,66,12,8,54,-0.7333333333333333,-12,1,1,0,1,Concordant responders
+134,10,56,3,5,63,-0.5,7,1,0,1,0,"Discordant (obj yes, subj no)"
+135,30,74,12,8,61,-0.7333333333333333,-13,1,1,0,1,Concordant responders
+136,30,74,12,30,68,0,-6,0,1,0,0,"Discordant (obj no, subj yes)"
+137,25,60,12,15,44,-0.4,-16,0,1,0,0,"Discordant (obj no, subj yes)"
+138,20,67,12,1,40,-0.95,-27,1,1,0,1,Concordant responders
+139,25,74,12,10,51,-0.6,-23,1,1,0,1,Concordant responders
+140,20,68,9,16,68,-0.2,0,0,0,0,0,Concordant non-responders
+141,12,65,12,2,48,-0.8333333333333334,-17,1,1,0,1,Concordant responders
+143,30,73,6,23,68,-0.23333333333333334,-5,0,1,0,0,"Discordant (obj no, subj yes)"
+144,30,74,6,28,66,-0.06666666666666667,-8,0,1,0,0,"Discordant (obj no, subj yes)"
+145,30,77,12,18,NA,-0.4,NA,0,NA,NA,NA,Missing responder status
+146,30,72,3,29,70,-0.03333333333333333,-2,0,0,0,0,Concordant non-responders
+148,30,54,3,30,66,0,12,0,0,0,0,Concordant non-responders
+149,30,73,6,30,70,0,-3,0,0,0,0,Concordant non-responders
+150,30,74,6,0,48,-1,-26,1,1,0,1,Concordant responders
+151,30,60,12,30,72,0,12,0,0,0,0,Concordant non-responders
+152,30,78,9,30,48,0,-30,0,1,0,0,"Discordant (obj no, subj yes)"
+153,20,72,9,4,68,-0.8,-4,1,0,1,0,"Discordant (obj yes, subj no)"
+154,30,78,12,12,66,-0.6,-12,1,1,0,1,Concordant responders
+155,30,67,6,22,61,-0.26666666666666666,-6,0,1,0,0,"Discordant (obj no, subj yes)"
+156,30,66,12,25,NA,-0.16666666666666666,NA,0,NA,NA,NA,Missing responder status
+157,30,70,6,15,68,-0.5,-2,1,0,1,0,"Discordant (obj yes, subj no)"
+158,30,71,3,9,66,-0.7,-5,1,1,0,1,Concordant responders
+160,28,71,3,28,67,0,-4,0,0,0,0,Concordant non-responders
+161,20,66,3,8,65,-0.6,-1,1,0,1,0,"Discordant (obj yes, subj no)"
+162,15,70,6,2,63,-0.8666666666666667,-7,1,1,0,1,Concordant responders
+163,20,66,12,3,52,-0.85,-14,1,1,0,1,Concordant responders
+164,17,47,12,23,46,0.35294117647058826,-1,0,0,0,0,Concordant non-responders
+165,8,72,3,10,69,0.25,-3,0,0,0,0,Concordant non-responders
+166,30,72,12,18,54,-0.4,-18,0,1,0,0,"Discordant (obj no, subj yes)"
+167,8,67,3,1,57,-0.875,-10,1,1,0,1,Concordant responders
+168,30,65,3,30,68,0,3,0,0,0,0,Concordant non-responders
+170,8,55,3,5,59,-0.375,4,0,0,0,0,Concordant non-responders
+172,30,67,9,18,34,-0.4,-33,0,1,0,0,"Discordant (obj no, subj yes)"
+173,30,69,3,4,44,-0.8666666666666667,-25,1,1,0,1,Concordant responders
+175,25,76,3,25,54,0,-22,0,1,0,0,"Discordant (obj no, subj yes)"
+176,20,46,6,4,38,-0.8,-8,1,1,0,1,Concordant responders
+177,15,68,6,3,65,-0.8,-3,1,0,1,0,"Discordant (obj yes, subj no)"
+179,20,65,6,4,44,-0.8,-21,1,1,0,1,Concordant responders
+180,9,63,3,7,61,-0.2222222222222222,-2,0,0,0,0,Concordant non-responders
+181,30,63,12,28,56,-0.06666666666666667,-7,0,1,0,0,"Discordant (obj no, subj yes)"
+182,10,67,3,22,68,1.2,1,0,0,0,0,Concordant non-responders
+183,30,74,6,29,72,-0.03333333333333333,-2,0,0,0,0,Concordant non-responders
+184,30,56,6,30,54,0,-2,0,0,0,0,Concordant non-responders
+185,25,72,12,10,57,-0.6,-15,1,1,0,1,Concordant responders
+186,30,68,12,26,54,-0.13333333333333333,-14,0,1,0,0,"Discordant (obj no, subj yes)"
+187,30,70,6,30,72,0,2,0,0,0,0,Concordant non-responders

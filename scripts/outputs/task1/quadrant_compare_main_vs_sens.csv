@@ -1,0 +1,10 @@
+quadrant,n,pct,dataset,prop
+Concordant responders,75,54.34782608695652,MAIN (interpolation),0.5434782608695652
+"Discordant (obj yes, subj no)",7,5.072463768115942,MAIN (interpolation),0.050724637681159424
+"Discordant (obj no, subj yes)",33,23.91304347826087,MAIN (interpolation),0.2391304347826087
+Concordant non-responders,23,16.666666666666668,MAIN (interpolation),0.16666666666666666
+Concordant responders,75,41.899441340782126,SENS (LOCF),0.41899441340782123
+"Discordant (obj yes, subj no)",7,3.910614525139665,SENS (LOCF),0.03910614525139665
+"Discordant (obj no, subj yes)",34,18.99441340782123,SENS (LOCF),0.18994413407821228
+Concordant non-responders,24,13.40782122905028,SENS (LOCF),0.1340782122905028
+Missing responder status,39,21.787709497206706,SENS (LOCF),0.21787709497206703
