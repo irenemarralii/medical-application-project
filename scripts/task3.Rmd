@@ -1,5 +1,0 @@
----
-title: "task3"
-output: html_document
----
-

@@ -1,0 +1,7 @@
+obj_resp_lbl,subj_resp_lbl,n,pct_total
+Objective non-responder,Subjective missing,25,13.966480446927374
+Objective non-responder,Subjective non-responder,23,12.849162011173185
+Objective non-responder,Subjective responder,33,18.435754189944134
+Objective responder,Subjective missing,16,8.938547486033519
+Objective responder,Subjective non-responder,7,3.910614525139665
+Objective responder,Subjective responder,75,41.899441340782126

@@ -1,0 +1,7 @@
+step,n_subjects,pct_of_any_cycle1
+Any Cycle 1 record,179,100
+Start available (Month 1),179,100
+End available (Month 12 or last observed),179,100
+Paired start+end (responder analysis set),179,100
+Valid pct_change_MMDs (MMDs_start > 0),179,100
+Valid delta_HIT6,138,77.1

@@ -5,18 +5,35 @@ output:
   html_document: default
 ---
 
-This part audits missing data patterns and prepares imputation outputs. 
+This section focuses on the assessment and handling of missing data in both baseline and longitudinal variables.
+
+First, we conduct a systematic audit of missingness patterns to characterize their extent and structure across variables and follow-up visits. Based on these findings, we implement appropriate imputation strategies tailored to the data structure: multivariate imputation for baseline covariates and within-cycle imputation for longitudinal outcomes.
+
+The resulting imputed datasets constitute the analysis-ready inputs for subsequent mixed-effects modeling and mismatch analyses (Task 1 and Task 2).
+
+Particular care is taken to respect the longitudinal structure of the data and treatment cycles, avoiding information leakage across washout periods.
 
 ```{r setup, message=FALSE, warning=FALSE}
+if (!requireNamespace("here", quietly = TRUE)) install.packages("here")
+library(here)
+
+
 library(tidyverse)
 
 # Load cleaned objects produced by 01_setup.Rmd
 baseline <- readRDS("data/processed/baseline_clean.rds")
 long <- readRDS("data/processed/long_clean.rds")
 
-# Output folders
-dir.create("outputs", showWarnings = FALSE, recursive = TRUE)
-dir.create("outputs/missing", showWarnings = FALSE, recursive = TRUE)
+# Output folders (this script only)
+library(here)
+
+OUT_DIR <- here("outputs", "02_preprocessing")
+
+dir.create(OUT_DIR, showWarnings = FALSE, recursive = TRUE)
+dir.create(file.path(OUT_DIR, "missing"), showWarnings = FALSE, recursive = TRUE)
+dir.create(file.path(OUT_DIR, "figures"), showWarnings = FALSE, recursive = TRUE)
+dir.create(file.path(OUT_DIR, "checks"), showWarnings = FALSE, recursive = TRUE)
+
 
 # Quick sanity checks
 cat("Loaded cleaned datasets.\n")
@@ -26,7 +43,8 @@ cat("Unique subjects baseline:", n_distinct(baseline$SUBJECT_ID), "\n")
 cat("Unique subjects long:", n_distinct(long$SUBJECT_ID), "\n")
 ```
 
-Missingness audit: we compute the missing rate for each variable in both the baseline and the longitudinal datasets and export the results as CSV tables for documentation and reporting purposes.
+**Missingness audit**
+We compute the missing rate for each variable in both the baseline and the longitudinal datasets and export the results as CSV tables for documentation and reporting purposes.
 ```{r missingness-audit}
 # Baseline missing rate per variable
 miss_base <- baseline %>%
@@ -37,8 +55,6 @@ miss_base <- baseline %>%
 cat("\nTop 10 baseline missing rates:\n")
 print(head(miss_base, 10))
 
-readr::write_csv(miss_base, "outputs/missing/missing_baseline.csv")
-
 # Long missing rate per variable
 miss_long <- long %>%
   summarise(across(everything(), ~ mean(is.na(.)))) %>%
@@ -48,8 +64,43 @@ miss_long <- long %>%
 cat("\nTop 10 longitudinal missing rates:\n")
 print(head(miss_long, 10))
 
-readr::write_csv(miss_long, "outputs/missing/missing_longitudinal.csv")
+library(ggplot2)
+
+p_base_miss <- miss_base %>%
+  filter(missing_rate > 0) %>%
+  ggplot(aes(
+    x = reorder(variable, missing_rate),
+    y = missing_rate,
+    fill = missing_rate
+  )) +
+  geom_col() +
+  coord_flip() +
+  scale_fill_viridis_c(option = "C", direction = -1) +
+  labs(
+    title = "Baseline missingness by variable",
+    x = "Variable",
+    y = "Proportion missing",
+    fill = "Missing rate"
+  ) +
+  theme_minimal()
+
+p_base_miss
+
+readr::write_csv(miss_base, file.path(OUT_DIR, "missing", "missing_baseline.csv"))
+readr::write_csv(miss_long, file.path(OUT_DIR, "missing", "missing_longitudinal.csv"))
+
+ggsave(
+  filename = file.path(OUT_DIR, "figures", "baseline_missingness_by_variable.png"),
+  plot = p_base_miss,
+  width = 8,
+  height = 6,
+  dpi = 300
+)
+
+
 ```
+The plot highlights substantial heterogeneity in missingness across baseline variables, motivating the use of multivariate imputation rather than complete-case analysis.
+
 Missingness by timepoint (CYCLE x MONTH) for key longitudinal outcomes (MMDs, HIT-6, HADS-A/D, INT and MIDAS when available), in order to assess whether missing data patterns varied across follow-up visits.
 ```{r}
 # Define key outcomes (use only those that exist)
@@ -65,14 +116,51 @@ miss_by_time <- long %>%
     ) %>%
   arrange(CYCLE, MONTH)
 
+# Long format for plotting
+miss_long_plot <- miss_by_time %>%
+  pivot_longer(starts_with("miss_"),
+               names_to = "variable",
+               values_to = "missing_rate")
+
+
 cat("\nMissingness by cycle/month (first rows):\n")
 print(head(miss_by_time, 10))
 
 # Save for reporting
-readr::write_csv(miss_by_time, "outputs/missing/missing_by_cycle_month.csv")
+readr::write_csv(miss_by_time, file.path(OUT_DIR, "missing", "missing_by_cycle_month.csv"))
+
+library(tidyr)
+
+p_heat <- ggplot(miss_long_plot,
+       aes(x = MONTH, y = factor(CYCLE), fill = missing_rate)) +
+  geom_tile() +
+  facet_wrap(~ variable) +
+  scale_fill_viridis_c(option = "C", limits = c(0, 1)) +
+  labs(
+    title = "Missingness across cycles and months",
+    x = "Month",
+    y = "Cycle",
+    fill = "Missing rate"
+  )
+
+p_heat
+
+ggsave(
+  filename = file.path(OUT_DIR, "figures", "missingness_heatmap_cycles_months.png"),
+  plot = p_heat,
+  width = 9,
+  height = 6,
+  dpi = 300
+)
+
 
 ```
-MICE diagnostics: md.pattern on a baseline subset
+The heatmap shows that missingness varies across follow-up visits and outcomes, with higher proportions at later months, supporting the need for longitudinal imputation strategies.
+
+
+**MICE diagnostics**
+Missing data patterns in a selected subset of baseline variables. 
+
 ```{r mdpattern-run, fig.width=10, fig.height=6, message=FALSE, warning=FALSE}
 if (!requireNamespace("mice", quietly = TRUE)) install.packages("mice")
 library(mice)
@@ -88,9 +176,9 @@ print(pattern_vars)
 
 if (length(pattern_vars) >= 2) {
 
-  tmp_plot <- baseline %>% select(all_of(pattern_vars))
+  tmp_plot <- baseline %>% dplyr::select(all_of(pattern_vars))
 
-  # Create short labels for plotting (only rename columns that exist)
+  # Short labels for plotting (rename only existing columns)
   short_names <- c(
     "AGE_OF_ONSET" = "onset",
     "BMI" = "bmi",
@@ -100,35 +188,29 @@ if (length(pattern_vars) >= 2) {
     "Psycopathological" = "psycho"
   )
 
-  # Apply renaming safely
   tmp_plot <- tmp_plot %>%
-    rename_with(~ unname(short_names[.x]),
-                .cols = intersect(names(tmp_plot), names(short_names)))
+    dplyr::rename_with(
+      ~ unname(short_names[.x]),
+      .cols = intersect(names(tmp_plot), names(short_names))
+    )
 
-  # Make text smaller and increase top margin
-  op <- par(cex = 0.9, mar = c(5, 4, 6, 2) + 0.1)
-
-  md.pattern(tmp_plot)
-
-  par(op)
+  # Plot md.pattern
+ op <- par(cex = 0.9, mar = c(5, 4, 6, 2) + 0.1)
+mice::md.pattern(tmp_plot)   # questo fa il plot
+par(op)
 
 } else {
-  cat("\nNot enough variables found for md.pattern.\n")
-  cat("Available baseline columns are:\n")
-  print(names(baseline))
+  cat("\nNot enough variables found for md.pattern (need at least 2).\n")
 }
-
 ```
-
+The missing data pattern is non-monotone, indicating that missingness affects different variables across subjects and supporting the use of chained equations rather than simple imputation strategies.
 
 Export md.pattern table: this step saves the md.pattern output as a table. It is useful for reporting missingness patterns without relying on the plot. 
 ```{r}
 if (length(pattern_vars) >= 2) {
 
-  # Recreate the same temporary dataset used for plotting
-  tmp <- baseline %>% select(all_of(pattern_vars))
+  tmp <- baseline %>% dplyr::select(all_of(pattern_vars))
 
-  # Short variable names (same as Step 4)
   short_names <- c(
     "AGE_OF_ONSET" = "onset",
     "BMI" = "bmi",
@@ -138,28 +220,30 @@ if (length(pattern_vars) >= 2) {
     "Psycopathological" = "psycho"
   )
 
-  # Apply renaming safely (only existing columns)
   tmp <- tmp %>%
-    rename_with(
+    dplyr::rename_with(
       ~ unname(short_names[.x]),
       .cols = intersect(names(tmp), names(short_names))
     )
 
-  # Compute md.pattern without plotting
+  # md.pattern table (no plot)
   md_tab <- md.pattern(tmp, plot = FALSE)
 
-  # Save table to CSV for the report
-  write.csv(md_tab,
-            "outputs/missing/mdpattern_baseline_subset.csv",
-            row.names = TRUE)
+  # Export for reporting
+write.csv(
+  md_tab,
+  file.path(OUT_DIR, "missing", "mdpattern_baseline_subset.csv"),
+  row.names = TRUE
+)
 
-  cat("\nmd.pattern table saved in outputs/missing/mdpattern_baseline_subset.csv\n")
+  # Optional: show first rows as a table in the knitted output
+  knitr::kable(md_tab, caption = "Missing data pattern for selected baseline variables")
 
 } else {
-  cat("\nStep 5 skipped: not enough variables for md.pattern export.\n")
+  cat("\nmd.pattern export skipped: not enough variables.\n")
 }
 ```
-Baseline imputation (MICE)
+**Baseline imputation (MICE)**
 After inspecting missingness patterns in a subset of baseline variables (md. pattern), we run a multivariate imputation by chained equations (MICE) model on the selected baseline covariates.
 
 The goal is to obtain one completed baseline dataset ('baseline_imp') that we will later merge with the longitudinal data for the main analyses.
@@ -191,38 +275,50 @@ imp <- mice(base_mice, m = 5, maxit = 20, method = meth, predictorMatrix = pred)
 
 plot(imp)  # trace plots
 
+```
+Trace plots were inspected to assess convergence; chains showed stable mixing across iterations.
+
+*Density plot*
+```{r}
 if ("BMI" %in% names(base_mice)) densityplot(imp, ~ BMI)
 if ("AGE_OF_ONSET" %in% names(base_mice)) densityplot(imp, ~ AGE_OF_ONSET)
 
+```
+The distribution of observed values was compared with imputed values to check plausibility for continuous covariates.
+
+```{r}
+if ("BMI" %in% names(base_mice)) {
+  stripplot(imp, BMI ~ .imp,
+            pch = 20,
+            cex = 1.0,
+            main = "Observed vs imputed BMI values")
+}
+
+```
+Stripplots showed good overlap between observed and imputed values, suggesting imputations were consistent with the empirical range.
+
+```{r mice-baseline-save, message=FALSE, warning=FALSE}
 baseline_imp <- complete(imp, 1)
 
 dir.create("data/processed", showWarnings = FALSE, recursive = TRUE)
 saveRDS(imp, "data/processed/baseline_mice_object.rds")
 saveRDS(baseline_imp, "data/processed/baseline_imputed.rds")
-
 ```
-MICE ran for 20 iterations with 5 imputed datasets. We inspected convergence using trace plots and checked the plausibility of imputations using density plots for continuous variables.
-
-We then extracted one completed baseline dataset ('baseline_imp = complete(imp, 1)') for the main analysis workflow and saved both the MICE object and the imputed baseline dataset as '.rds' files:
-- 'data/processed/baseline_mice_object.rds'
-- 'data/processed/baseline_imputed.rds'
-
-Diagnostic figures were generated in the rendered output for reporting. 
-
+Baseline covariates were imputed using MICE (m=5, maxit=20). Convergence was assessed via trace plots, and plausibility was checked by comparing observed and imputed distributions for key continuous variables. One completed baseline dataset was extracted (complete(imp, 1)) for downstream merging with longitudinal data, and both the MICE object and the imputed baseline dataset were saved as RDS files for reproducibility.
 ===============================================================================
 **Longitudinal Imputation (main and sensitivity analyses):**
 In this step, we address missing values in the longitudinal outcomes.
 Given the repeated-measures structure of the data and the presence of distinct treatment cycles separated by a washout (suspension) period, imputation is performed **within each patient and within each treatment cycle**, without borrowing information across cycles.
 
-We define two longitudinal datasets:
-- a **main dataset**, using linear interpolation between observed values;
-- a **sensitivity dataset**, using a last observation carried forward (LOCF) approach.
+Linear interpolation was used as the main strategy to preserve within-cycle trends between observed visits, while LOCF was used as a conservative sensitivity approach to test robustness to missingness assumptions.
 
 In both cases, missing values occurring **before the first observed measurement within a cycle** are not imputed, in order to avoid introducing artificial baseline values.
 
 ```{r longitudinal-imputation, message=FALSE, warning=FALSE}
 if (!requireNamespace("zoo", quietly = TRUE)) install.packages("zoo")
 library(zoo)
+library(readr)
+
 
 # Key longitudinal variables to impute (keep only those that exist)
 vars_long_imp <- c("MMDs", "HIT6", "HADSA", "HADSD", "INT", "MIDAS")
@@ -230,6 +326,11 @@ vars_long_imp <- intersect(vars_long_imp, names(long))
 
 cat("\nLongitudinal variables considered for imputation:\n")
 print(vars_long_imp)
+
+if (length(vars_long_imp) == 0) {
+  stop("No longitudinal variables available for imputation in `long`.")
+}
+
 
 # Ensure correct ordering (within subject and cycle)
 long_sorted <- long %>%
@@ -269,33 +370,81 @@ long_sens <- long_sorted %>%
   ) %>%
   ungroup()
 
-# --- Sanity check: do not impute before the first observation within each cycle ---
-check_leading <- long_sorted %>%
-  group_by(SUBJECT_ID, CYCLE) %>%
-  arrange(MONTH, .by_group = TRUE) %>%
-  summarise(
-    lead_na_MMDs_orig = is.na(first(MMDs)),
-    lead_na_MMDs_main = is.na(first(long_main$MMDs[match(paste(SUBJECT_ID, CYCLE, first(MONTH)),
-                                                        paste(long_main$SUBJECT_ID, long_main$CYCLE, long_main$MONTH))])),
-    lead_na_MMDs_sens = is.na(first(long_sens$MMDs[match(paste(SUBJECT_ID, CYCLE, first(MONTH)),
-                                                        paste(long_sens$SUBJECT_ID, long_sens$CYCLE, long_sens$MONTH))])),
-    .groups = "drop"
+# --- Sanity check: leading NAs should remain NA (no imputation before first observed visit in cycle) ---
+if (!("MMDs" %in% names(long_sorted))) {
+
+  warning("`MMDs` not found: skipping leading/trailing NA sanity checks.")
+
+} else {
+
+  check_leading <- long_sorted %>%
+    select(SUBJECT_ID, CYCLE, MONTH, MMDs) %>%
+    rename(MMDs_orig = MMDs) %>%
+    left_join(
+      long_main %>% 
+        select(SUBJECT_ID, CYCLE, MONTH, MMDs) %>% 
+        rename(MMDs_main = MMDs),
+      by = c("SUBJECT_ID", "CYCLE", "MONTH")
+    ) %>%
+    left_join(
+      long_sens %>% 
+        select(SUBJECT_ID, CYCLE, MONTH, MMDs) %>% 
+        rename(MMDs_sens = MMDs),
+      by = c("SUBJECT_ID", "CYCLE", "MONTH")
+    ) %>%
+    group_by(SUBJECT_ID, CYCLE) %>%
+    arrange(MONTH, .by_group = TRUE) %>%
+    summarise(
+      lead_na_MMDs_orig = is.na(first(MMDs_orig)),
+      lead_na_MMDs_main = is.na(first(MMDs_main)),
+      lead_na_MMDs_sens = is.na(first(MMDs_sens)),
+      .groups = "drop"
+    )
+
+  knitr::kable(
+    head(check_leading, 10),
+    caption = "Leading-NA check (first 10 subject-cycle pairs)"
   )
 
-print(head(check_leading, 10))
+  check_trailing <- long_sorted %>%
+    select(SUBJECT_ID, CYCLE, MONTH, MMDs) %>%
+    rename(MMDs_orig = MMDs) %>%
+    left_join(
+      long_main %>% 
+        select(SUBJECT_ID, CYCLE, MONTH, MMDs) %>% 
+        rename(MMDs_main = MMDs),
+      by = c("SUBJECT_ID", "CYCLE", "MONTH")
+    ) %>%
+    group_by(SUBJECT_ID, CYCLE) %>%
+    arrange(MONTH, .by_group = TRUE) %>%
+    summarise(
+      tail_na_MMDs_orig = is.na(last(MMDs_orig)),
+      tail_na_MMDs_main = is.na(last(MMDs_main)),
+      .groups = "drop"
+    )
 
-write.csv(check_leading,
-          "outputs/missing/leading_na_check_MMDs.csv",
-          row.names = FALSE)
+  readr::write_csv(
+  check_trailing,
+  file.path(OUT_DIR, "checks", "trailing_na_check_MMDs_main.csv")
+)
 
 
-# Any violations? (leading NA in original should remain NA after imputation)
-viol_main <- sum(check_leading$lead_na_MMDs_orig & !check_leading$lead_na_MMDs_main, na.rm = TRUE)
-viol_sens <- sum(check_leading$lead_na_MMDs_orig & !check_leading$lead_na_MMDs_sens, na.rm = TRUE)
+  viol_main <- sum(
+    check_leading$lead_na_MMDs_orig & !check_leading$lead_na_MMDs_main,
+    na.rm = TRUE
+  )
+  viol_sens <- sum(
+    check_leading$lead_na_MMDs_orig & !check_leading$lead_na_MMDs_sens,
+    na.rm = TRUE
+  )
 
-cat("\nLeading-NA violations (MMDs):\n")
-cat("main (interp):", viol_main, "\n")
-cat("sens (LOCF):", viol_sens, "\n")
+  cat("\nLeading-NA violations (MMDs):\n")
+  cat("main (interp):", viol_main, "\n")
+  cat("sens (LOCF):", viol_sens, "\n")
+}
+
+did_sanity_check <- ("MMDs" %in% names(long_sorted))
+
 
 # Save for downstream steps
 dir.create("data/processed", showWarnings = FALSE, recursive = TRUE)
@@ -304,18 +453,19 @@ saveRDS(long_sens, "data/processed/long_imputed_sens_locf.rds")
 
 cat("\nSaved:\n- data/processed/long_imputed_main_interp.rds\n- data/processed/long_imputed_sens_locf.rds\n")
 ```
-After imputation, we performed a sanity check to verify that no values were imputed before the first observed measurement within each treatment cycle.
+A sanity check was implemented to ensure that no values were imputed before the first observed visit within each cycle (evaluated on MMDs when available). 
 
 Specifically, we compared the presence of leading missing values in the original data with the imputed datasets for the main (interpolation) and sensitivity (LOCF) approaches.
 
 No leading-NA violations were detected for primary outcomes (MMDs), confirming that the imputation respected the cycle structure and did not borrow information from previous cycles or introduce artificial baseline values.
 
+Overall, the missing data strategy was designed to balance methodological rigor with clinical interpretability, ensuring that imputation choices were consistent with the longitudinal and cyclical natural of the study design.
 ===============================================================================
 **Final merge of baseline and longitudinal data**
 
 In this step, we merge the imputed baseline dataset with the longitudinal datasets obtained after missing-data handling.
 
-this results into two final analysis-ready datasets:
+This results in two final analysis-ready datasets:
 - a **main dataset**, based on linear interpolation of longitudinal outcomes;
 - a **sensitivity dataset**, based on LOCF imputation.
 
@@ -360,12 +510,11 @@ cat("Duplicate visits (sens):", nrow(dup_sens), "\n")
 saveRDS(data_main, "data/processed/data_main_analysis.rds")
 saveRDS(data_sens, "data/processed/data_sens_analysis.rds")
 
-cat("\nSaved final datasets:\n")
+cat("\nSaved final analysis datasets:\n")
+
 cat("- data/processed/data_main_analysis.rds\n")
 cat("- data/processed/data_sens_analysis.rds\n")
 ```
 
-
-
-The merge did not introduce duplicated visits or inconsistencies in the longotudinal structure.
-The resulting datasets are now fully analysis-ready and will be sued for mixed-effects modeling and mismatch analyses addressing Task 1 and Task 2.
+The merge did not introduce duplicated visits or inconsistencies in the longitudinal structure.
+The resulting datasets are now fully analysis-ready and will be used for mixed-effects modeling and mismatch analyses addressing Task 1 and Task 2.
