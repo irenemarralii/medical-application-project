@@ -2,7 +2,7 @@
 ![Healthcare AI](https://img.shields.io/badge/domain-Healthcare%20AI-green)
 ![Statistics](https://img.shields.io/badge/method-Statistical%20Modeling-orange)
 ![University Project](https://img.shields.io/badge/type-Academic%20Project-lightgrey)
-# Objective-Subjective Mismatch in Anti-CGRP Migraine Treatment
+# Objective-Subjective Mismatch in Migraine Treatment
 ## BSc Artificial Intelligence - Medical Applications and Healthcare Project
 Longitudinal statistical analysis of anti-CGRP migraine treatment outcomes, investigating the mismatch between biological improvement and patient-perceived benefit. 
 
