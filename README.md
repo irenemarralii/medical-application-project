@@ -4,7 +4,7 @@
 ![University Project](https://img.shields.io/badge/type-Academic%20Project-lightgrey)
 # Objective-Subjective Mismatch in Anti-CGRP Migraine Treatment
 ## BSc Artificial Intelligence - Medical Applications and Healthcare Project
-Analysis of the relationship between clinical efficacy and patient-perceived benefit in migraine preventive therapy using longitudinal statistical models.
+Longitudinal statistical analysis of anti-CGRP migraine treatment outcomes, investigating the mismatch between biological improvement and patient-perceived benefit. 
 
 ## Project Overview
 Anti-CGRP therapies are designed to reduce migraine frequency by targeting the Calcitonin Gene-Related Peptide (CGRP) pathway. Clinical efficacy is evaluated using Monthly Migraine Days (MMDs).
@@ -113,6 +113,13 @@ Improvements in HIT-6 scores are more heterogeneous, indicating that subjective 
 A small subgroup of patients exhibits objective improvement without subjective benefit, highlighting a clinically relevant mismatch.
 
 Exploratory regression analysis suggests that this discordance is not explained by baseline clinical variables alone, indicating that additional psychosocial or dynamic factors may influence perceived treatment-benefit.
+
+## Clinical Implications
+These findings suggest that treatment success in migraine prevention cannot be evaluated solely through biological markers such as migraine frequency.
+
+Patient-reported outcomes provide complementary information about disease burden and perceived beneift, highlighting the importance of integrating subjective measures into treatment evaluation.
+
+
 
 ## Tech Stack
 Language: R
