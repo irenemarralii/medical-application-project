@@ -29,12 +29,12 @@ Which baseline characteristics may explain cases where clinical improvement does
 
 Anti-CGRP therapy shows a clear reduction in migraine frequency over time across treatment cycles.
 
-! [MMD Trend](outputs/task1/figures/trend_mmds_main.png)
+![MMD Trend](outputs/task1/figures/trend_mmds_main.png)
 
 **Objective vs Subjective Treatment Response**
 This scatter plot highlights the relationship between objective reduction in migraine days and change in patient-perceived disease buerden (HIT-6).
 
-! [Objective vs Subjective](outputs/task1/figures/scatter_mmds_pct_vs_hit6_delta_main.png)
+![Objective vs Subjective](outputs/task1/figures/scatter_mmds_pct_vs_hit6_delta_main.png)
 
 ## Dataset
 The analysis uses a longitudinal dataset of migraine patients treated with anti-CGRP therapies.
