@@ -32,7 +32,7 @@ Anti-CGRP therapy shows a clear reduction in migraine frequency over time across
 ![MMD Trend](outputs/task1/figures/trend_mmds_main.png)
 
 **Objective vs Subjective Treatment Response**
-This scatter plot highlights the relationship between objective reduction in migraine days and change in patient-perceived disease buerden (HIT-6).
+This scatter plot highlights the relationship between objective reduction in migraine days and change in patient-perceived disease burden (HIT-6).
 
 ![Objective vs Subjective](outputs/task1/figures/scatter_mmds_pct_vs_hit6_delta_main.png)
 
@@ -77,10 +77,10 @@ These models estimate population-level treatment effects while capturing individ
 Treatment response was evaluated at the end of Cycle 1.
 
 Objective response
-≥50 % reduction in Montlhy Migraine Days
+≥50 % reduction in Monthly Migraine Days
 
 Subjective response
-≥5-point improvement in HIt-6 score
+≥5-point improvement in HIT-6 score
 
 Patients were classified into response profile, with particular focus on the discordant subgroup showing biological improvement without perceived benefit.
 
@@ -117,7 +117,7 @@ Exploratory regression analysis suggests that this discordance is not explained 
 ## Clinical Implications
 These findings suggest that treatment success in migraine prevention cannot be evaluated solely through biological markers such as migraine frequency.
 
-Patient-reported outcomes provide complementary information about disease burden and perceived beneift, highlighting the importance of integrating subjective measures into treatment evaluation.
+Patient-reported outcomes provide complementary information about disease burden and perceived benefit, highlighting the importance of integrating subjective measures into treatment evaluation.
 
 
 
